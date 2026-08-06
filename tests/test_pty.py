@@ -1,8 +1,8 @@
-"""Prueba de integracion en una terminal de verdad (pty).
+"""Integration test on a real terminal (pty).
 
-El arnes headless verifica el dibujo; esto verifica la plomeria: modo raw,
-pantalla alternativa, mouse, redibujado al cambiar el tamano y -- sobre todo --
-que al salir la terminal quede como estaba.
+The headless harness verifies the drawing; this verifies the plumbing: raw
+mode, the alternate screen, the mouse, redrawing on resize, and -- above all
+-- that the terminal is left as it was on exit.
 
     python3 tests/test_pty.py
 """
@@ -34,15 +34,15 @@ def set_size(fd, rows, cols):
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
 
 
-TRANSCRIPT = []   # todo lo que la aplicacion escribio, en orden
+TRANSCRIPT = []   # everything the application wrote, in order
 
 
 def drain(master, seconds=0.6):
-    """Lee todo lo que la aplicacion haya escrito en el plazo dado.
+    """Reads everything the application has written within the given window.
 
-    Lo leido se acumula tambien en TRANSCRIPT: el render es diferencial, asi
-    que para reconstruir la pantalla hay que reproducir el flujo completo desde
-    el arranque, no un trozo suelto.
+    What's read also accumulates in TRANSCRIPT: rendering is differential, so
+    reconstructing the screen means replaying the whole stream from startup,
+    not a loose chunk.
     """
     out = b""
     deadline = time.monotonic() + seconds
@@ -63,12 +63,12 @@ def drain(master, seconds=0.6):
 
 
 def wait_exit(master, proc, seconds=5):
-    """Espera la salida sin dejar de leer el master.
+    """Waits for exit without ever stopping reading the master.
 
-    Hace falta leer: el teardown termina en tcsetattr(TCSADRAIN), que se queda
-    esperando a que se consuma lo que la aplicacion acaba de escribir. Una
-    terminal real siempre esta leyendo; una prueba tiene que imitarla o parece
-    que el juego se cuelga al salir.
+    Reading is required: teardown ends in tcsetattr(TCSADRAIN), which blocks
+    until what the application just wrote gets consumed. A real terminal is
+    always reading; a test has to imitate that or the game looks like it
+    hangs on exit.
     """
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
@@ -86,10 +86,10 @@ def screen_now(rows, cols):
 
 
 def render(text, rows=30, cols=100):
-    """Interpreta lo justo de ANSI para reconstruir lo que se ve en pantalla.
+    """Interprets just enough ANSI to reconstruct what's on screen.
 
-    Soporta lo que emite el juego: posicionar el cursor, escribir, borrar la
-    pantalla y los SGR (que se descartan, aca solo interesan los caracteres).
+    Supports what the game emits: positioning the cursor, writing, clearing
+    the screen, and SGR (which is discarded -- only the characters matter here).
     """
     grid = [[" "] * cols for _ in range(rows)]
     x = y = 0
@@ -150,10 +150,10 @@ def main():
     check("activa el pegado con corchetes", "\x1b[?2004h" in boot)
     check("activa el mouse (SGR 1006)", "\x1b[?1006h" in boot)
     check("usa color de 24 bits", "38;2;" in boot, boot[:200])
-    drain(master, 0.5)   # el primer frame puede llegar partido en dos lecturas
+    drain(master, 0.5)   # the first frame can arrive split across two reads
     screen = screen_now(rows, cols)
-    # en el menu "MODULE 5" es tipografia de bloques, no texto: se comprueban
-    # las entradas y el titulo dibujado con bloques
+    # in the menu "MODULE 5" is a block typeface, not text: what's checked
+    # is the menu entries and the title drawn with blocks
     check("dibuja el menu",
           all(w in screen for w in ("CLASICO", "FORMAS", "SALIR", "PENTOMINOS")),
           screen[:500])

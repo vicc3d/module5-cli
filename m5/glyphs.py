@@ -1,29 +1,29 @@
-"""Dos juegos de glifos: uno Unicode y uno ASCII puro.
+"""Two glyph sets: one Unicode, one plain ASCII.
 
-Los caracteres de caja (U+2500…) y los bloques (U+2588…) tienen ancho
-"Neutral" y se dibujan con un solo avance en cualquier terminal moderna, asi
-que son seguros para el marco y el tablero. En cambio las flechas, el punto
-medio y las comillas angulares tienen ancho "Ambiguous": algunas terminales
-(Terminal.app entre ellas) las pintan al doble de ancho y corren el borde
-derecho de la caja una columna. Por eso el juego arranca con el set Unicode
-solo cuando el entorno se ve moderno, y cae al ASCII en consolas sobrias
-(TERM=linux, dumb) o si se fuerza con MODULE5_ASCII=1 / --ascii.
+Box-drawing characters (U+2500…) and blocks (U+2588…) have "Neutral" width and
+render at a single cell's advance in any modern terminal, so they're safe for
+the frame and the board. Arrows, the middle dot, and angle quotes, on the
+other hand, have "Ambiguous" width: some terminals (Terminal.app among them)
+paint them at double width and throw the box's right edge off by a column.
+That's why the game only starts with the Unicode set when the environment
+looks modern, and falls back to ASCII on plain consoles (TERM=linux, dumb) or
+if forced with MODULE5_ASCII=1 / --ascii.
 """
 
 import os
 
 UNICODE = {
-    # marco
+    # frame
     "tl": "┌", "tr": "┐", "bl": "└", "br": "┘",
     "h": "─", "v": "│",
     "lt": "├", "rt": "┤", "tt": "┬", "bt": "┴",
-    # marco doble (tablero y modales)
+    # double frame (board and modals)
     "dtl": "╔", "dtr": "╗", "dbl": "╚", "dbr": "╝",
     "dh": "═", "dv": "║",
-    # bloques
+    # blocks
     "full": "█", "upper": "▀", "lower": "▄",
     "shade": "░", "shade2": "▒",
-    # marcas
+    # marks
     "dot": "·",
     "empty_cell": "·",
     "sep": " · ",

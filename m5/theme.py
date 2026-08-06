@@ -1,6 +1,6 @@
-"""Temas visuales. Equivalen a los temas de la version web, traducidos a lo
-que una terminal puede dar: neon sobre negro, fosforo verde, plano azul y uno
-sin color para terminales sobrias o TERM=dumb.
+"""Visual themes. Equivalent to the web version's themes, translated to what a
+terminal can offer: neon on black, green phosphor, blue blueprint, and a
+colorless one for plain terminals or TERM=dumb.
 """
 
 from .pieces import PIECE_COLORS, PIECE_NAMES
@@ -11,7 +11,7 @@ class Theme:
     def __init__(self, key, desc_key, colors, tiles=True, piece_colors=None):
         self.key = key
         self.desc_key = desc_key
-        self.tiles = tiles            # celdas como baldosas de color o como letras
+        self.tiles = tiles            # cells as colored tiles, or as letters
         for name, value in colors.items():
             setattr(self, name, rgb(value) if isinstance(value, str) else value)
         self._pieces = {
@@ -23,10 +23,10 @@ class Theme:
         return self._pieces.get(name, self.text)
 
     def dim_piece(self, name, t=0.62):
-        """Version apagada del color de una pieza (bandeja, fantasma)."""
+        """Dimmed version of a piece's color (tray, ghost)."""
         color = self._pieces.get(name, self.text)
         if color is None or self.bg is None:
-            return None  # tema sin color: se distingue por atributo, no por tono
+            return None  # colorless theme: distinguished by attribute, not hue
         return mix(color, self.bg, t)
 
     def dim(self, color, t=0.5):
@@ -111,8 +111,8 @@ _MONO = {
 
 
 def _shades(base, lo=0.4, hi=1.0):
-    """Doce tonos de un mismo color: para los temas monocromaticos, donde las
-    piezas se distinguen por la letra y apenas por el brillo."""
+    """Twelve shades of a single color: for the monochrome themes, where
+    pieces are told apart by the letter and just a hint of brightness."""
     out = {}
     n = len(PIECE_NAMES)
     for i, name in enumerate(PIECE_NAMES):
@@ -136,7 +136,7 @@ THEME_ORDER = ["neon", "ascii", "blueprint", "mono"]
 
 def get_theme(key, color_mode=None):
     theme = THEMES.get(key) or THEMES["neon"]
-    # en una terminal sin color el tema pintado no sirve de nada
+    # a painted theme is useless on a colorless terminal
     if color_mode == "mono":
         return THEMES["mono"]
     return theme

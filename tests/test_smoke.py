@@ -1,10 +1,10 @@
-"""Pruebas de humo: recorren el juego entero sin terminal real.
+"""Smoke tests: run the whole game without a real terminal.
 
     python3 tests/test_smoke.py
 
-Cubren las reglas que importan (soluciones unicas del clasico, desbloqueo de
-niveles, verificacion del editor, codigos compatibles con la web) y que ninguna
-pantalla explote en tamanos, temas y modos de color distintos.
+Cover the rules that matter (classic mode's unique solutions, level
+unlocking, editor verification, codes compatible with the web version) and
+that no screen blows up across different sizes, themes, and color modes.
 """
 
 import sys
@@ -31,7 +31,7 @@ def section(name):
     print("\n== %s" % name)
 
 
-# --- 1. solver ---------------------------------------------------------------
+# --- 1. solver ------------------------------------------------------------
 
 def test_solver():
     section("solver")
@@ -39,7 +39,7 @@ def test_solver():
         placements, timed_out = solve(lv.cells, time_limit=30)
         ok = placements is not None and not timed_out
         if ok:
-            # las piezas deben ser todas distintas y cubrir la silueta exacta
+            # the pieces must all be distinct and cover the silhouette exactly
             names = [p[0] for p in placements]
             covered = 0
             for _, mask in placements:
@@ -56,11 +56,11 @@ def test_solver():
           check_solvable([(0, c) for c in range(13)])[0] is False)
 
 
-# --- 2. codigos de desafio ---------------------------------------------------
+# --- 2. challenge codes ------------------------------------------------------
 
 def test_codes():
     section("codigos de desafio (formato de la version web)")
-    # valores de referencia generados con el encodeChallenge() de src/main.js
+    # reference values generated with encodeChallenge() from src/main.js
     cases = [
         ({"name": "Cruz Prueba", "cells": [[0, 1], [0, 2], [1, 0], [1, 1], [2, 1]],
           "rows": 3, "cols": 3},
@@ -81,7 +81,7 @@ def test_codes():
         check("rechaza codigo invalido %r" % bad, decode_challenge(bad) is None)
 
 
-# --- 3. clasico: solucion unica ---------------------------------------------
+# --- 3. classic mode: unique solutions ---------------------------------------
 
 def test_classic():
     section("modo clasico")
@@ -96,7 +96,7 @@ def test_classic():
     canon = h.store.solutions[0]
     check("la forma canonica son 60 caracteres", len(canon) == 60)
 
-    # repetir la MISMA solucion debe rechazarse
+    # repeating the SAME solution must be rejected
     h.key("enter")  # "Buscar otra solucion" -> reinicia el tablero
     check("el tablero se reinicio", len(h.game.placed) == 0)
     auto_solve(h)
@@ -105,7 +105,7 @@ def test_classic():
           str(len(h.store.solutions)))
     check("el titulo dice repetida", h.has("REPETIDA"), h.text()[:200])
 
-    # una solucion equivalente por simetria tambien cuenta como repetida
+    # a solution equivalent by symmetry also counts as repeated
     h2 = Harness()
     h2.key("enter")
     auto_solve(h2)
@@ -125,16 +125,16 @@ def test_place_and_pickup():
     check("el contador sube", h.has("1/12"), h.text())
     check("suelta la seleccion", h.game.sel is None)
 
-    # la I vertical centrada se sale del tablero por abajo: fantasma invalido
+    # the vertical I centered runs off the bottom of the board: invalid ghost
     h.keys("2")
     ghost = h.game.ghost()
     check("el fantasma de la I se marca invalido", ghost is not None and not ghost.valid)
     h.key("enter")
     check("no coloca una pieza invalida", len(h.game.placed) == 1)
-    # sigue invalida una fila arriba: ahi choca con la F recien puesta
+    # still invalid a row up: there it collides with the F just placed
     h.key("up")
     check("choca con la pieza ya puesta", not h.game.ghost().valid)
-    # a la columna 0 entra: cursor (2,0) ancla la I en las filas 0-4
+    # it fits at column 0: cursor (2,0) anchors the I across rows 0-4
     for _ in range(5):
         h.key("left")
     check("en una columna libre ya entra", h.game.ghost().valid,
@@ -142,7 +142,7 @@ def test_place_and_pickup():
     h.key("enter")
     check("se coloca la I", len(h.game.placed) == 2, str(h.game.placed.keys()))
 
-    # el cursor quedo sobre la I recien puesta: backspace la retira
+    # the cursor ended up on the I just placed: backspace takes it back
     h.key("backspace")
     check("backspace la retira", len(h.game.placed) == 1, str(h.game.placed.keys()))
     check("y vuelve a la mano", h.game.sel is not None and h.game.sel["name"] == "I")
@@ -152,7 +152,7 @@ def test_place_and_pickup():
     h.key("esc")
     check("ofrece guardar al salir con piezas puestas", h.top == "Modal", h.top)
 
-    # la tecla de una pieza ya colocada la retira (como el clic en la web)
+    # a placed piece's key takes it back (like clicking it in the web version)
     h.key("esc")
     h2 = Harness()
     h2.key("enter").keys("1").key("enter")
@@ -161,7 +161,7 @@ def test_place_and_pickup():
     check("su tecla la retira", "F" not in h2.game.placed
           and h2.game.sel and h2.game.sel["name"] == "F")
 
-    # el mouse hace lo mismo (las coordenadas dependen de la escala del tablero)
+    # the mouse does the same (coordinates depend on the board's scale)
     h3 = Harness()
     h3.key("enter").keys("1")
     gs = h3.app.top
@@ -186,7 +186,7 @@ def test_menu_layout():
             h = Harness(w, hh, lang=lang)
             h.render()
             raw = h.lines()
-            # una fila cuenta como vacia aunque lleve la linea divisoria
+            # a row counts as blank even if it carries the divider line
             blank = lambda ln: ln.replace(g("v"), " ").replace("|", " ").strip() == ""
             lines = [ln.rstrip() for ln in raw]
             title_y = next(i for i, ln in enumerate(lines) if "01" in ln)
@@ -201,7 +201,7 @@ def test_menu_layout():
             check("%dx%d/%s: el menu no invade el pie" % (w, hh, lang),
                   nxt is None or nxt < hh - 3, "02 en %s de %d" % (nxt, hh))
 
-            # lo importante: la descripcion no invade la columna de la cifra
+            # the important part: the description doesn't invade the value column
             mw = min(64, w - 4)
             x0 = (w - mw) // 2
             div, text_w = menu_columns(MenuScreen(h.app).items(), mw)
@@ -210,7 +210,7 @@ def test_menu_layout():
             col = x0 + div
             check("%dx%d/%s: hay linea vertical en la fila del titulo" % (w, hh, lang),
                   raw[title_y][col] in "|" + g("v"), repr(raw[title_y][col]))
-            for dy in (1, 2, 3):  # el hueco y las lineas de descripcion
+            for dy in (1, 2, 3):  # the gap and the description lines
                 row = raw[title_y + dy]
                 check("%dx%d/%s: la fila +%d respeta la columna" % (w, hh, lang, dy),
                       row[col] in "|" + g("v") and row[:col].rstrip() == row[:col].rstrip(),
@@ -219,7 +219,7 @@ def test_menu_layout():
                       % (w, hh, lang, dy), row[col + 1:].strip() == "",
                       repr(row[col + 1:]))
 
-    # medir y dibujar salen del mismo plan: no se pueden desincronizar
+    # measuring and drawing come from the same plan: they can't get out of sync
     items = MenuScreen(Harness(80, 24).app).items()
     for gap in (0, 1):
         for dg in (0, 1):
@@ -252,7 +252,7 @@ def test_board_scaling():
     check("el tablero ocupa mas del doble de ancho que el minimo",
           w >= 2 * board_size(CLASSIC)[0] - 3, str(w))
 
-    # una silueta chica se agranda mas para no quedar perdida
+    # a small silhouette gets enlarged more so it doesn't get lost
     h2 = Harness(100, 30)
     h2.game.start_level(0)
     h2.app.stack = [h2.app.stack[0]]
@@ -260,7 +260,7 @@ def test_board_scaling():
     check("el nivel 1 (5 celdas) usa celdas grandes",
           h2.app.top.scale[0] >= 6, str(h2.app.top.scale))
 
-    # zoom manual con + / _ (shift-= y shift-- en teclado US)
+    # manual zoom with + / _ (shift-= and shift-- on a US keyboard)
     h4 = Harness(100, 30)
     h4.key("enter")
     gs = h4.app.top
@@ -279,7 +279,7 @@ def test_board_scaling():
         h4.type("_")
     check("_ no baja de la escala minima", gs.scale == (2, 1), str(gs.scale))
 
-    # las teclas de pieza -/= no deben confundirse con el zoom
+    # the piece keys -/= must not get confused with zoom
     h4.type("-")
     check("- sigue eligiendo la pieza Y",
           h4.game.sel is not None and h4.game.sel["name"] == "Y")
@@ -287,7 +287,7 @@ def test_board_scaling():
     check("= sigue eligiendo la pieza Z",
           h4.game.sel is not None and h4.game.sel["name"] == "Z")
 
-    # la rueda del mouse tambien hace zoom, como en la vista ASCII de la web
+    # the mouse wheel also zooms, like the web's ASCII view
     h5 = Harness(100, 30)
     h5.key("enter")
     gs = h5.app.top
@@ -297,7 +297,7 @@ def test_board_scaling():
     h5.mouse("wheel", "down", 50, 15)
     check("la rueda aleja", gs.scale == small, str(gs.scale))
 
-    # el zoom sobrevive a un reinicio y se recorta si ya no entra
+    # zoom survives a restart and clamps if it no longer fits
     h6 = Harness(100, 30)
     h6.key("enter")
     h6.type("+")
@@ -317,7 +317,7 @@ def test_board_scaling():
         check("zoom invalido %r no rompe nada" % (junk,),
               hx.app.top.scale in CELL_SCALES, str(hx.app.top.scale))
 
-    # el editor comparte el mismo zoom
+    # the editor shares the same zoom
     h9 = Harness(100, 30)
     h9.app.push(EditorScreen(h9.app))
     h9.render()
@@ -330,7 +330,7 @@ def test_board_scaling():
     check("y el clic pinta la celda correcta con la escala nueva", (2, 3) in ed.cells,
           str(sorted(ed.cells)))
 
-    # y en una terminal chica cae a la escala minima sin desbordar
+    # and on a small terminal it falls back to the minimum scale without overflowing
     for w, hh in ((46, 16), (60, 20), (80, 24), (100, 30), (140, 45)):
         h3 = Harness(w, hh)
         h3.key("enter")
@@ -356,7 +356,7 @@ def test_canonical_symmetry():
                 grid[cell_list[i]] = name
     gm.occupied = dict(grid)
     base = gm.canonical_solution()
-    # espejo horizontal del tablero -> misma forma canonica
+    # horizontal mirror of the board -> same canonical form
     gm.occupied = {(r, 9 - c): n for (r, c), n in grid.items()}
     check("espejo horizontal da la misma canonica", gm.canonical_solution() == base)
     gm.occupied = {(5 - r, c): n for (r, c), n in grid.items()}
@@ -365,7 +365,7 @@ def test_canonical_symmetry():
     check("rotacion 180 da la misma canonica", gm.canonical_solution() == base)
 
 
-# --- 4. niveles: desbloqueo -------------------------------------------------
+# --- 4. levels: unlocking ----------------------------------------------------
 
 def test_levels():
     section("modo formas")
@@ -383,7 +383,7 @@ def test_levels():
     check("arranca el nivel 2", h.top == "GameScreen" and h.game.level_index == 1)
 
 
-# --- 5. editor y verificacion -----------------------------------------------
+# --- 5. editor and verification -----------------------------------------------
 
 def test_editor():
     section("editor de desafios")
@@ -394,7 +394,7 @@ def test_editor():
     check("abre el editor", h.top == "EditorScreen")
     ed = h.app.top
 
-    # una cruz (el pentomino X): resoluble con una pieza
+    # a cross (the X pentomino): solvable with one piece
     for cell in [(0, 1), (1, 0), (1, 1), (1, 2), (2, 1)]:
         ed.cells.add(cell)
     ed.invalidate()
@@ -402,7 +402,7 @@ def test_editor():
     check("verifica una cruz como resoluble", ed.verified == ed.key(), ed.status)
     check("lo dice en pantalla", h.has("RESOLUBLE"), ed.status)
 
-    # una silueta imposible: 5 celdas en L con un hueco suelto
+    # an impossible silhouette: 5 cells in an L with a loose gap
     ed.cells.clear()
     for cell in [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (2, 0), (2, 1), (2, 2), (2, 3), (2, 4)]:
         ed.cells.add(cell)
@@ -411,7 +411,7 @@ def test_editor():
     check("detecta la silueta sin solucion", ed.verified is None, ed.status)
     check("lo dice en pantalla", h.has("SIN SOLUCION"), ed.status)
 
-    # guardar exige verificacion previa
+    # saving requires prior verification
     h.keys("s")
     check("no guarda sin verificar", len(h.store.custom) == 0)
 
@@ -428,7 +428,7 @@ def test_editor():
           h.store.custom and h.store.custom[0]["name"] == "Mi Cruz")
     check("vuelve a mis desafios", h.top == "CustomsScreen", h.top)
 
-    # jugarlo de punta a punta
+    # play it start to finish
     h.key("enter")
     check("juega el desafio propio", h.top == "GameScreen")
     auto_solve(h)
@@ -454,7 +454,7 @@ def test_import():
     check("y avisa", h2.has("invalido"), h2.text()[-300:])
 
 
-# --- 6. partidas guardadas --------------------------------------------------
+# --- 6. saved games -------------------------------------------------------
 
 def test_slots():
     section("partidas guardadas")
@@ -474,7 +474,7 @@ def test_slots():
     check("con la pieza puesta", len(h.game.placed) == 1)
     check("y el reloj corriendo", h.game.start_time is not None)
 
-    # un snapshot corrupto no debe romper nada
+    # a corrupted snapshot shouldn't break anything
     h.store.slots["1"] = {"mode": "level", "level_index": 999, "placed": []}
     h.app.load_slot(1)
     check("ignora un slot invalido", h.top == "GameScreen")
@@ -491,7 +491,7 @@ def test_about():
 
     for lang in ("es", "en"):
         h = Harness(100, 30, lang=lang)
-        h.key("down").key("down").key("down").key("enter")  # menu -> Configuracion
+        h.key("down").key("down").key("down").key("enter")  # menu -> Settings
         items = h.app.top.items()
         check("%s: hay una fila 'about'" % lang,
               any(it["key"] == "about" for it in items))
@@ -502,14 +502,14 @@ def test_about():
         check("%s: abre un modal" % lang, h.top == "Modal")
         check("%s: muestra la version" % lang, h.has(__version__), h.text())
         check("%s: menciona la licencia" % lang, h.has("MIT License"), h.text())
-        h.key("enter")  # Cerrar
+        h.key("enter")  # Close
         check("%s: vuelve a Configuracion" % lang, h.top == "SettingsScreen")
 
 
-# --- 7. robustez de dibujo --------------------------------------------------
+# --- 7. drawing robustness --------------------------------------------------
 
 def walk_all_screens(h):
-    """Recorre todas las pantallas y las dibuja."""
+    """Walks through every screen and draws it."""
     from m5.screens import (CustomsScreen, EditorScreen, GameScreen, HelpScreen,
                             ImportScreen, LevelsScreen, MenuScreen, SettingsScreen,
                             SlotsScreen)
@@ -519,7 +519,7 @@ def walk_all_screens(h):
                 SlotsScreen, EditorScreen, GameScreen, HelpScreen, ImportScreen):
         app.stack = [MenuScreen(app), cls(app)]
         h.render()
-    # con una pieza en la mano y un modal encima
+    # with a piece in hand and a modal on top
     app.stack = [MenuScreen(app), GameScreen(app)]
     app.game.select("I")
     h.render()

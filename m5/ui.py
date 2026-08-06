@@ -1,28 +1,28 @@
-"""Primitivas de dibujo: marcos, el tablero, la bandeja, siluetas y un campo
-de texto. Todo se pinta sobre el buffer de Screen; nada escribe a la terminal
-directamente.
+"""Drawing primitives: frames, the board, the tray, silhouettes, and a text
+field. Everything paints onto the Screen buffer; nothing writes to the
+terminal directly.
 """
 
 from .glyphs import g
 from .pieces import PIECE_KEYS, PIECE_NAMES, bounds_of
 from .term import BOLD, DIM, REVERSE, UNDERLINE
 
-# Un caracter de terminal mide aproximadamente el doble de alto que de ancho,
-# asi que una celda cuadrada necesita el doble de columnas que de filas. Estas
-# son las escalas posibles, de menor a mayor: el tablero elige la mas grande
-# que entre en la terminal, en vez de quedarse siempre en la mas chica.
+# A terminal character is roughly twice as tall as it is wide, so a square
+# cell needs twice as many columns as rows. These are the possible scales,
+# smallest to largest: the board picks the largest one that fits the
+# terminal, instead of always staying at the smallest.
 CELL_SCALES = ((2, 1), (4, 2), (6, 3), (8, 4))
-CELL_W = 2  # escala minima, la que se usa para medir si el panel lateral cabe
+CELL_W = 2  # minimum scale, used to measure whether the side panel fits
 
 
 def board_size(board, scale=(2, 1)):
-    """Ancho y alto en caracteres del tablero con su marco."""
+    """Width and height in characters of the board with its frame."""
     cw, ch = scale
     return board.cols * cw + 3, board.rows * ch + 2
 
 
 def max_scale_index(board, avail_w, avail_h):
-    """El indice de la celda mas grande que todavia entra en el area."""
+    """The index of the largest cell that still fits the area."""
     best = 0
     for i, scale in enumerate(CELL_SCALES):
         w, h = board_size(board, scale)
@@ -32,12 +32,12 @@ def max_scale_index(board, avail_w, avail_h):
 
 
 def auto_scale_index(board, avail_w, avail_h):
-    """La escala que el juego elige solo, sin zoom manual.
+    """The scale the game picks on its own, without manual zoom.
 
-    El tope depende de cuantas celdas tenga la silueta: estirar mucho un
-    tablero grande separa tanto las letras que las piezas dejan de leerse como
-    una sola figura, mientras que una silueta chica (los primeros niveles)
-    quedaria perdida en el medio de la pantalla si no se agranda.
+    The ceiling depends on how many cells the silhouette has: stretching a
+    large board too much spaces the letters out enough that pieces stop
+    reading as a single shape, while a small silhouette (the early levels)
+    would get lost in the middle of the screen if it isn't enlarged.
     """
     limit = 8 if len(board.cells) <= 25 else 4
     top = max_scale_index(board, avail_w, avail_h)
@@ -47,11 +47,11 @@ def auto_scale_index(board, avail_w, avail_h):
 
 
 def resolve_scale(board, avail_w, avail_h, zoom=None):
-    """Devuelve (escala, indice, indice_maximo, indice_automatico).
+    """Returns (scale, index, max_index, auto_index).
 
-    `zoom` es un indice elegido a mano; se recorta a lo que entre en pantalla,
-    asi que acercarse de mas nunca desborda el tablero. Con zoom None manda la
-    escala automatica.
+    `zoom` is a manually chosen index; it's clamped to what fits on screen, so
+    zooming in too far never overflows the board. With zoom None, the
+    automatic scale rules.
     """
     top = max_scale_index(board, avail_w, avail_h)
     auto = auto_scale_index(board, avail_w, avail_h)
@@ -64,10 +64,10 @@ def pick_scale(board, avail_w, avail_h, zoom=None):
 
 
 def draw_cell(scr, x, y, cw, ch, glyph, fg, bg, attr=0, body=" ", body_fg=None):
-    """Pinta una celda de cw x ch caracteres con su glifo al centro.
+    """Paints a cw x ch cell with its glyph centered.
 
-    Con la escala minima (2x1) la celda *es* el glifo; a partir de ahi se
-    rellena el bloque y la letra queda centrada dentro.
+    At the minimum scale (2x1) the cell *is* the glyph; from there on the
+    block gets filled in and the letter stays centered inside it.
     """
     for yy in range(ch):
         scr.put(x, y + yy, body * cw, body_fg if body_fg is not None else fg, bg, attr)
@@ -76,16 +76,16 @@ def draw_cell(scr, x, y, cw, ch, glyph, fg, bg, attr=0, body=" ", body_fg=None):
 
 
 def scrim(scr, theme, amount=0.72):
-    """Apaga todo lo ya dibujado para que un modal encima destaque.
+    """Dims everything already drawn so a modal on top stands out.
 
-    Sin esto el panel lateral del juego se sigue leyendo al costado del modal
-    y parece que el texto se saliera de la caja.
+    Without this the game's side panel still reads next to the modal and it
+    looks like the text is spilling out of the box.
     """
     from .term import mix
 
     bg = theme.bg
     if bg is None:
-        # tema sin color: lo unico disponible es el atributo de atenuado
+        # colorless theme: the only thing available is the dim attribute
         for y in range(scr.h):
             row = scr.buf[y]
             for x in range(scr.w):
@@ -113,7 +113,7 @@ def scrim(scr, theme, amount=0.72):
 
 
 def box(scr, x, y, w, h, theme, title=None, double=False, color=None, title_color=None, fill=True):
-    """Marco con titulo opcional incrustado en el borde superior."""
+    """Frame with an optional title embedded in the top border."""
     if w < 2 or h < 2:
         return
     color = theme.border if color is None else color
@@ -134,7 +134,7 @@ def box(scr, x, y, w, h, theme, title=None, double=False, color=None, title_colo
 
 
 def draw_board(scr, x, y, game, theme, ghost=None, show_cursor=True, scale=(2, 1)):
-    """El tablero con marco doble, las piezas colocadas y el fantasma."""
+    """The board with a double frame, placed pieces, and the ghost piece."""
     board = game.board
     cw, chh = scale
     inner = board.cols * cw + 1
@@ -160,23 +160,23 @@ def draw_board(scr, x, y, game, theme, ghost=None, show_cursor=True, scale=(2, 1
             glyph, fg, cbg, attr, body, body_fg = _cell_style(
                 game, theme, r, c, ghost_cells, scale)
             if show_cursor and game.cursor == (r, c) and not ghost:
-                # sin pieza en la mano el cursor tiene que verse solo
+                # without a piece in hand the cursor has to stand out on its own
                 attr |= REVERSE
             draw_cell(scr, cx, cy, cw, chh, glyph, fg, cbg, attr, body, body_fg)
 
 
 def _cell_style(game, theme, r, c, ghost_cells, scale=(2, 1)):
-    """Devuelve (glifo, fg, bg, attr, relleno, color_relleno) de una celda.
+    """Returns (glyph, fg, bg, attr, body, body_color) for a cell.
 
-    Con la escala minima el glifo llena la celda; en las grandes hay lugar para
-    un cuerpo (la baldosa de color, o un bloque en los temas de texto) con la
-    letra de la pieza centrada encima.
+    At the minimum scale the glyph fills the cell; at larger ones there's room
+    for a body (the colored tile, or a block in the text-based themes) with
+    the piece's letter centered on top.
     """
     cell = (r, c)
     bg = theme.board_bg
     big = scale[0] > 2
-    # en los temas sin baldosas el cuerpo de la pieza es un bloque; en los
-    # de baldosas el color de fondo ya hace de cuerpo
+    # in themes without tiles the piece's body is a block; in tiled themes
+    # the background color already serves as the body
     solid = g("full") if big else " "
 
     if cell in ghost_cells:
@@ -201,7 +201,7 @@ def _cell_style(game, theme, r, c, ghost_cells, scale=(2, 1)):
 
 
 def draw_tray(scr, x, y, w, game, theme):
-    """La bandeja: las 12 piezas con su tecla, apagadas si ya estan puestas."""
+    """The tray: the 12 pieces with their key, dimmed if already placed."""
     items = []
     for name in PIECE_NAMES:
         key = PIECE_KEYS[name]
@@ -209,7 +209,7 @@ def draw_tray(scr, x, y, w, game, theme):
         selected = game.sel and game.sel["name"] == name
         items.append((name, key, placed, selected))
 
-    # cada entrada son 2 columnas (tecla + letra) mas 2 de separacion
+    # each entry is 2 columns (key + letter) plus 2 of spacing
     cx = x
     for name, key, placed, selected in items:
         if cx + 2 > x + w:
@@ -218,7 +218,7 @@ def draw_tray(scr, x, y, w, game, theme):
             key_fg, key_bg, key_at = theme.text_dim, theme.panel, DIM
             name_fg, name_bg, name_at = theme.text_dim, theme.panel, DIM
         elif selected and theme.tiles:
-            # la pieza en la mano se muestra como baldosa, igual que en el tablero
+            # the piece in hand shows as a tile, just like on the board
             key_fg, key_bg, key_at = theme.tile_text, theme.piece(name), BOLD
             name_fg, name_bg, name_at = theme.tile_text, theme.piece(name), BOLD
         elif selected:
@@ -234,7 +234,7 @@ def draw_tray(scr, x, y, w, game, theme):
 
 
 def draw_piece_shape(scr, x, y, cells, color, theme, fill_bg=True):
-    """Miniatura de una pieza (2 columnas por celda), para el panel lateral."""
+    """Thumbnail of a piece (2 columns per cell), for the side panel."""
     rows, cols = bounds_of(cells)
     cellset = set(cells)
     for r in range(rows):
@@ -249,8 +249,8 @@ def draw_piece_shape(scr, x, y, cells, color, theme, fill_bg=True):
 
 
 def draw_silhouette(scr, x, y, board, theme, occupied=None):
-    """Silueta objetivo comprimida: cada linea de texto son dos filas del
-    tablero (medios bloques), asi un 6x10 entra en 10x3 caracteres."""
+    """Compressed target silhouette: each text line is two board rows (half
+    blocks), so a 6x10 fits in 10x3 characters."""
     cells = {tuple(c) for c in board.cells}
     done = set(occupied or ())
     lines = (board.rows + 1) // 2
@@ -269,7 +269,7 @@ def draw_silhouette(scr, x, y, board, theme, occupied=None):
                 ch = " "
             if ch == " ":
                 continue
-            # si se pasa `occupied`, lo ya resuelto se pinta al maximo brillo
+            # if `occupied` is passed, what's already solved paints at full brightness
             filled = ((r_top, c) in done) or ((r_bot, c) in done)
             color = theme.accent if filled else theme.text_dim
             scr.put(x + c, y + i, ch, color, theme.panel)
@@ -277,7 +277,7 @@ def draw_silhouette(scr, x, y, board, theme, occupied=None):
 
 
 def hint(scr, x, y, w, pairs, theme):
-    """Linea de ayuda: pares (tecla, accion) separados por un punto."""
+    """Help line: (key, action) pairs separated by a dot."""
     cx = x
     sep = g("sep")
     for i, (key, action) in enumerate(pairs):
@@ -294,7 +294,7 @@ def hint(scr, x, y, w, pairs, theme):
 
 
 def wrap(text, width):
-    """Corte de lineas por palabras (los textos del juego son cortos)."""
+    """Word-based line wrapping (the game's texts are short)."""
     words, lines, cur = text.split(), [], ""
     for word in words:
         if not cur:
@@ -310,10 +310,10 @@ def wrap(text, width):
 
 
 class TextField:
-    """Campo de texto de una linea, con cursor y desplazamiento horizontal.
+    """A single-line text field, with cursor and horizontal scrolling.
 
-    Se usa para el nombre de un desafio y para pegar codigos "M5.…", que son
-    mas largos que el ancho visible.
+    Used for a challenge's name and for pasting "M5.…" codes, which are
+    longer than the visible width.
     """
 
     def __init__(self, value="", max_len=200):
@@ -323,7 +323,7 @@ class TextField:
         self.scroll = 0
 
     def handle(self, ev):
-        """Procesa un evento. True si lo consumio."""
+        """Processes an event. True if it consumed it."""
         name = getattr(ev, "name", None)
         if name == "char":
             self.insert(ev.char)
@@ -360,7 +360,7 @@ class TextField:
             self.value = self.value[:cut] + self.value[self.pos:]
             self.pos = cut
             return True
-        if hasattr(ev, "text"):  # pegado
+        if hasattr(ev, "text"):  # paste
             self.insert(ev.text.replace("\n", "").replace("\r", ""))
             return True
         return False
@@ -374,7 +374,7 @@ class TextField:
         self.pos += len(text)
 
     def draw(self, scr, x, y, w, theme, focus=True):
-        # mantener el cursor a la vista
+        # keep the cursor in view
         if self.pos < self.scroll:
             self.scroll = self.pos
         elif self.pos >= self.scroll + w - 1:

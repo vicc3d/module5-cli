@@ -1,4 +1,4 @@
-"""Punto de entrada: python3 -m m5 (o el lanzador ./module5)."""
+"""Entry point: python3 -m m5 (or the ./module5 launcher)."""
 
 import argparse
 import os
@@ -10,18 +10,18 @@ from . import __version__
 def build_parser():
     p = argparse.ArgumentParser(
         prog="module5",
-        description="Module 5 - pentominos en la terminal (sin dependencias).",
+        description="Module 5 - pentominoes in the terminal (zero dependencies).",
     )
     p.add_argument("--version", action="version", version="Module 5 " + __version__)
-    p.add_argument("--lang", choices=("es", "en"), help="idioma (por defecto: el del sistema)")
+    p.add_argument("--lang", choices=("es", "en"), help="language (default: system's)")
     p.add_argument("--theme", choices=("neon", "ascii", "blueprint", "mono"),
-                   help="tema visual")
+                   help="visual theme")
     p.add_argument("--ascii", action="store_true",
-                   help="usar solo caracteres ASCII (para terminales sobrias)")
-    p.add_argument("--no-mouse", action="store_true", help="no activar el mouse")
-    p.add_argument("--no-color", action="store_true", help="sin color")
+                   help="use ASCII-only glyphs (for plain terminals)")
+    p.add_argument("--no-mouse", action="store_true", help="don't enable the mouse")
+    p.add_argument("--no-color", action="store_true", help="no color")
     p.add_argument("--save-dir", metavar="DIR",
-                   help="carpeta del archivo de progreso (por defecto la del sistema)")
+                   help="folder for the save file (default: the system's)")
     return p
 
 
@@ -35,15 +35,15 @@ def main(argv=None):
 
     if not sys.stdout.isatty():
         sys.stderr.write(
-            "module5: la salida no es una terminal interactiva.\n"
-            "Ejecutalo directamente en tu terminal (no por una tuberia).\n")
+            "module5: stdout is not an interactive terminal.\n"
+            "Run it directly in your terminal (not through a pipe).\n")
         return 2
     if not sys.stdin.isatty():
-        sys.stderr.write("module5: se necesita un teclado (stdin no es una terminal).\n")
+        sys.stderr.write("module5: a keyboard is needed (stdin is not a terminal).\n")
         return 2
 
-    # el juego dibuja sus propios glifos; --ascii y el autodetectado se
-    # resuelven antes de importar cualquier cosa que los use
+    # the game draws its own glyphs; --ascii and the autodetected choice are
+    # resolved before importing anything that uses them
     from . import glyphs
     if args.ascii:
         glyphs.use_ascii(True)

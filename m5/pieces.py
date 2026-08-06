@@ -1,8 +1,8 @@
-"""Los 12 pentominos (celdas (fila, columna)) y utilidades de orientacion.
+"""The 12 pentominoes ((row, col) cells) and orientation utilities.
 
-Port directo de src/pieces.js de la version web: las mismas definiciones, el
-mismo orden alfabetico y la misma paleta neon, para que un tablero se vea
-igual en la terminal que en el navegador.
+Direct port of the web version's src/pieces.js: the same definitions, the
+same alphabetical order, and the same neon palette, so a board looks the same
+in the terminal as in the browser.
 """
 
 PIECE_DEFS = {
@@ -22,7 +22,7 @@ PIECE_DEFS = {
 
 PIECE_NAMES = list(PIECE_DEFS)
 
-# Paleta neon sobre fondo negro: saturada pero sin estridencia.
+# Neon palette on black: saturated but not garish.
 PIECE_COLORS = {
     "F": "#ff2d78",
     "I": "#00e5ff",
@@ -38,7 +38,7 @@ PIECE_COLORS = {
     "Z": "#d10fff",
 }
 
-# Tecla por pieza, en el orden de PIECE_NAMES (igual que la bandeja web).
+# Key per piece, in PIECE_NAMES order (same as the web tray).
 PIECE_KEYS = {
     "F": "1", "I": "2", "L": "3", "N": "4", "P": "5", "T": "6",
     "U": "7", "V": "8", "W": "9", "X": "0", "Y": "-", "Z": "=",
@@ -46,7 +46,7 @@ PIECE_KEYS = {
 
 
 def normalize_cells(cells):
-    """Traslada las celdas al origen y las ordena de forma canonica."""
+    """Shifts the cells to the origin and sorts them canonically."""
     min_r = min(c[0] for c in cells)
     min_c = min(c[1] for c in cells)
     return tuple(sorted((r - min_r, c - min_c) for r, c in cells))
@@ -61,7 +61,7 @@ def flip_h(cells):
 
 
 def orientations_of(cells):
-    """Todas las orientaciones unicas: 4 rotaciones x 2 reflejos, deduplicadas."""
+    """All unique orientations: 4 rotations x 2 reflections, deduplicated."""
     seen = {}
     cur = normalize_cells(cells)
     for _ in range(2):
@@ -76,7 +76,7 @@ ORIENTATIONS = {name: orientations_of(cells) for name, cells in PIECE_DEFS.items
 
 
 def centroid_of(cells):
-    """Centro aproximado: ancla el fantasma al cursor como en la version web."""
+    """Approximate center: anchors the ghost to the cursor like the web version."""
     r = round(sum(c[0] for c in cells) / len(cells))
     c = round(sum(c[1] for c in cells) / len(cells))
     return r, c

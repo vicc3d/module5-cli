@@ -1,8 +1,8 @@
-"""Arnes de pruebas: corre la aplicacion entera sin una terminal real.
+"""Test harness: runs the whole application without a real terminal.
 
-Sustituye Terminal por un doble que mantiene el mismo buffer de Screen pero no
-escribe a ningun descriptor, asi se pueden inyectar teclas y leer la pantalla
-como texto plano.
+Substitutes Terminal with a double that keeps the same Screen buffer but
+doesn't write to any descriptor, so keys can be injected and the screen read
+back as plain text.
 """
 
 import os
@@ -38,8 +38,8 @@ class FakeTerminal:
         self.resized = True
 
     def present(self):
-        # se renderiza de verdad: asi las pruebas detectan un crash en el
-        # generador de secuencias, no solo en el dibujo
+        # actually rendered: this way tests catch a crash in the sequence
+        # generator, not just in the drawing
         self.screen.render()
         self.frames += 1
 
@@ -57,8 +57,8 @@ class FakeTerminal:
 class Harness:
     def __init__(self, w=100, h=30, color_mode="truecolor", theme="neon", lang="es",
                  settings=None, home=None):
-        # `home` reutiliza el directorio de otra instancia: sirve para probar
-        # que lo guardado sobrevive a un reinicio
+        # `home` reuses another instance's directory: useful for testing that
+        # what's saved survives a restart
         self.tmp = home or tempfile.mkdtemp(prefix="module5-test-")
         os.environ["MODULE5_HOME"] = self.tmp
         store = Store()
@@ -69,7 +69,7 @@ class Harness:
         self.term = FakeTerminal(w, h, color_mode)
         self.app = App(self.term, store)
 
-    # --- entrada -----------------------------------------------------------
+    # --- input ---------------------------------------------------------------
 
     def key(self, name, char=None):
         self.app.dispatch(Key(name, char))
@@ -104,7 +104,7 @@ class Harness:
         self.app.render_once()
         return self
 
-    # --- lectura -----------------------------------------------------------
+    # --- reading ---------------------------------------------------------
 
     def lines(self):
         scr = self.term.screen
@@ -138,28 +138,28 @@ class Harness:
 
 
 def auto_solve(harness):
-    """Resuelve el tablero actual colocando pieza por pieza por el camino real
-    del juego (seleccionar, orientar, mover el cursor, colocar)."""
+    """Solves the current board by placing pieces one by one through the
+    real game path (select, orient, move the cursor, place)."""
     app = harness.app
     gm = app.game
     cell_list = [tuple(c) for c in gm.board.cells]
     placements, timed_out = solve(cell_list, time_limit=30)
-    assert placements, "el tablero de prueba deberia ser resoluble"
+    assert placements, "the test board should be solvable"
     screen = app.top
     for name, mask in placements:
         cells = [cell_list[i] for i in range(len(cell_list)) if (mask >> i) & 1]
         target = normalize_cells(cells)
-        assert gm.select(name), "no se pudo seleccionar %s" % name
+        assert gm.select(name), "could not select %s" % name
         for ori in ORIENTATIONS[name]:
             if ori == target:
                 gm.sel["orient"] = ori
                 break
         else:
-            raise AssertionError("orientacion no encontrada para %s" % name)
+            raise AssertionError("orientation not found for %s" % name)
         anchor_r = min(c[0] for c in cells)
         anchor_c = min(c[1] for c in cells)
         cr, cc = centroid_of(gm.sel["orient"])
         gm.cursor = (anchor_r + cr, anchor_c + cc)
         screen.try_place()
-    harness.render()   # que el buffer refleje el modal de victoria
+    harness.render()   # so the buffer reflects the victory modal
     return placements

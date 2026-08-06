@@ -1,9 +1,9 @@
 #!/bin/sh
-# Empaqueta el juego en UN solo archivo ejecutable: m5.pyz
+# Packages the game into ONE executable file: m5.pyz
 #
-# Usa zipapp, de la biblioteca estandar: no descarga ni compila nada. El .pyz
-# resultante se puede copiar suelto a cualquier Linux o macOS con Python 3 y
-# ejecutarse directamente (./m5.pyz).
+# Uses zipapp, from the standard library: nothing downloaded or compiled. The
+# resulting .pyz can be copied on its own to any Linux or macOS with Python 3
+# and run directly (./m5.pyz).
 
 set -e
 DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -11,13 +11,13 @@ cd "$DIR"
 
 rm -rf build m5.pyz
 mkdir -p build/m5
-# solo el paquete: ni pruebas, ni cache de bytecode
+# just the package: no tests, no bytecode cache
 for f in m5/*.py; do
     cp "$f" build/m5/
 done
 
-# zipapp arranca por el __main__.py de la raiz del archivo; el paquete ya trae
-# el suyo, asi que la raiz solo lo invoca
+# zipapp starts from the __main__.py at the archive root; the package already
+# has its own, so the root one just calls it
 cat > build/__main__.py <<'PYEOF'
 import sys
 
@@ -34,5 +34,5 @@ EOF
 
 chmod +x m5.pyz
 rm -rf build
-echo "listo: $DIR/m5.pyz  ($(wc -c < m5.pyz | tr -d ' ') bytes)"
-echo "probalo con: ./m5.pyz --version"
+echo "done: $DIR/m5.pyz  ($(wc -c < m5.pyz | tr -d ' ') bytes)"
+echo "try it: ./m5.pyz --version"

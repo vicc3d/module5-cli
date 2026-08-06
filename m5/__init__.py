@@ -1,9 +1,9 @@
-"""Module 5 - pentominos para la terminal.
+"""Module 5 - pentominoes for the terminal.
 
-Version nativa de terminal del juego web: los mismos pentominos, los mismos 20
-niveles, la misma cuenta de 2339 soluciones unicas y codigos de desafio
-intercambiables con el navegador. Solo biblioteca estandar de Python 3: nada
-que compilar, nada que instalar.
+Native terminal port of the web game: the same pentominoes, the same 20
+levels, the same count of 2339 unique solutions, and challenge codes
+interchangeable with the browser. Pure Python 3 standard library: nothing to
+compile, nothing to install.
 """
 
 __version__ = "1.0.0"

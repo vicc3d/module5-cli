@@ -1,9 +1,9 @@
-"""Persistencia en disco y codigos de intercambio de desafios.
+"""On-disk persistence and challenge exchange codes.
 
-La version web guardaba en localStorage; aca se usa un unico JSON en el
-directorio de datos del usuario (XDG en Linux, Application Support en macOS).
-El formato de los codigos "M5.…" es identico al de la web, asi que un desafio
-creado en la terminal se puede importar en el navegador y al reves.
+The web version saved to localStorage; here a single JSON file lives in the
+user's data directory (XDG on Linux, Application Support on macOS). The
+"M5.…" code format is identical to the web's, so a challenge created in the
+terminal can be imported in the browser and back.
 """
 
 import base64
@@ -18,18 +18,18 @@ APP = "module5"
 SCHEMA = 1
 
 DEFAULT_SETTINGS = {
-    "lang": None,      # None = detectar del entorno en el primer arranque
+    "lang": None,      # None = detect from the environment on first launch
     "theme": "neon",
     "mouse": True,
 }
 
 DEFAULTS = {
     "schema": SCHEMA,
-    "solutions": [],     # soluciones canonicas del modo clasico
+    "solutions": [],     # canonical solutions of classic mode
     "classic_best": None,
     "levels": {},        # "index" -> {"best": ms}
     "slots": {},         # "0".."4" -> snapshot
-    "custom": [],        # desafios propios
+    "custom": [],        # user-created challenges
     "settings": dict(DEFAULT_SETTINGS),
 }
 
@@ -48,7 +48,7 @@ def save_path():
 
 
 class Store:
-    """El archivo de progreso, cargado en memoria y escrito de forma atomica."""
+    """The progress file, loaded into memory and written atomically."""
 
     def __init__(self):
         self.data = json.loads(json.dumps(DEFAULTS))
@@ -64,8 +64,8 @@ class Store:
             for key, default in DEFAULTS.items():
                 if key == "settings" or key not in disk:
                     continue
-                # se ignora cualquier campo con el tipo cambiado: un save de
-                # una version futura no debe tumbar el arranque
+                # any field with a changed type is ignored: a save from a
+                # future version shouldn't crash startup
                 if default is None or isinstance(disk[key], type(default)):
                     self.data[key] = disk[key]
             self.data["settings"] = {**DEFAULT_SETTINGS, **(disk.get("settings") or {})}
@@ -73,8 +73,8 @@ class Store:
             self.data["settings"]["lang"] = detect_lang()
 
     def persist(self):
-        """Escritura atomica: tmp + rename, para no corromper el save si el
-        proceso muere a mitad de camino (o si dos terminales lo escriben)."""
+        """Atomic write: tmp + rename, so the save doesn't get corrupted if
+        the process dies mid-write (or if two terminals write it)."""
         path = save_path()
         try:
             os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -83,9 +83,9 @@ class Store:
                 json.dump(self.data, fh, ensure_ascii=False)
             os.replace(tmp, path)
         except OSError:
-            pass  # sin disco escribible el juego sigue siendo jugable
+            pass  # without writable disk the game is still playable
 
-    # --- accesos comodos ---------------------------------------------------
+    # --- convenience accessors ----------------------------------------------
 
     @property
     def settings(self):
@@ -118,11 +118,11 @@ class Store:
         self.persist()
 
 
-# --- codigos de intercambio (compatibles con la version web) ----------------
+# --- exchange codes (compatible with the web version) -----------------------
 
 
 def encode_challenge(ch):
-    """Serializa un desafio como "M5.<base64>", igual que encodeChallenge()."""
+    """Serializes a challenge as "M5.<base64>", same as encodeChallenge()."""
     cells = {tuple(c) for c in ch["cells"]}
     rows, cols = ch["rows"], ch["cols"]
     bits = "".join(
@@ -147,7 +147,7 @@ def encode_challenge(ch):
 
 
 def decode_challenge(code):
-    """Inverso de encode_challenge(). Devuelve el desafio o None si no sirve."""
+    """Inverse of encode_challenge(). Returns the challenge or None if invalid."""
     try:
         code = code.strip()
         if not code.startswith("M5."):

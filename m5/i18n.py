@@ -1,8 +1,8 @@
-"""Internacionalizacion: espanol neutro e ingles.
+"""Internationalization: neutral Spanish and English.
 
-El idioma inicial se detecta de LANG/LC_ALL y se puede cambiar en
-Configuracion. Los textos son los de la version web, adaptados donde la
-terminal cambia la interaccion (teclado en vez de mouse, sin camara 3D).
+The initial language is detected from LANG/LC_ALL and can be changed in
+Settings. The strings are the web version's, adapted where the terminal
+changes the interaction (keyboard instead of mouse, no 3D camera).
 """
 
 import os
@@ -11,7 +11,7 @@ from .levels import LEVEL_NAMES_EN
 
 STRINGS = {
     "es": {
-        # menu principal
+        # main menu
         "sys_line": "PENTOMINOS // 12 PIEZAS · 60 CELDAS · TERMINAL",
         "menu_tagline": "Pentominos en la terminal. Dos modos de juego.",
         "classic_title": "CLASICO",
@@ -46,7 +46,7 @@ STRINGS = {
         "piece_label": "PIEZA",
         "tray": "BANDEJA",
         "time_label": "TIEMPO",
-        # pantalla de niveles
+        # levels screen
         "levels_head": "FORMAS // 20 NIVELES",
         "locked": "bloqueado",
         "my_challenges": "MIS DESAFIOS",
@@ -83,7 +83,7 @@ STRINGS = {
         "verify_cancelled": "verificacion cancelada",
         "challenge_default": "Desafio {0}",
         "need_verify": "verifica la silueta antes de guardar",
-        # configuracion
+        # settings
         "settings_title": "CONFIGURACION",
         "language": "Idioma",
         "theme": "Tema",
@@ -110,7 +110,7 @@ STRINGS = {
         "theme_ascii": "Fosforo verde, texto puro",
         "theme_blueprint": "Plano tecnico en azul",
         "theme_mono": "Sin color, para terminales sobrias",
-        # modales
+        # modals
         "win_solution": "SOLUCION #{0} REGISTRADA",
         "time_line": "Tiempo: {0}",
         "personal_record": " — ¡record personal!",
@@ -137,7 +137,7 @@ STRINGS = {
         "code_copied": "Copiado al portapapeles.",
         "code_copy_manual": "Seleccionalo con el mouse para copiarlo.",
         "close": "Cerrar",
-        # salir de una partida en curso
+        # leaving a game in progress
         "leave_title": "SALIR AL MENU",
         "leave_body": "Tienes piezas colocadas sin guardar. ¿Que quieres hacer?",
         "save_and_exit": "Guardar y salir",
@@ -145,7 +145,7 @@ STRINGS = {
         "cancel_leave": "Cancelar",
         "no_free_slot": "no hay slots libres: usa Configuracion › Partidas",
         "saved_to_slot": "partida guardada en el slot {0}",
-        # ayuda / pistas de teclado
+        # help / keyboard hints
         "keys_move": "mover",
         "keys_pick": "elegir pieza",
         "keys_rotate": "rotar",

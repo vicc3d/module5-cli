@@ -1,11 +1,11 @@
-"""Solver de cobertura exacta para pentominos distintos (cada pieza a lo sumo
-una vez). Verifica que los desafios creados por el usuario tengan solucion.
+"""Exact-cover solver for distinct pentominoes (each piece at most once).
+Verifies that user-created challenges have a solution.
 
-La version web corria esto en un Web Worker; aca no hay hilos que valgan la
-pena (el GIL dejaria la UI congelada igual), asi que se usa un solver de
-mascaras de bits -- bastante mas rapido que el port literal del de JS -- con
-un callback `on_tick` que le devuelve el control al bucle de render cada tanto
-para dibujar el spinner y permitir cancelar.
+The web version ran this in a Web Worker; here there's no thread worth using
+(the GIL would leave the UI frozen anyway), so it's a bitmask solver --
+considerably faster than a literal port of the JS one -- with an `on_tick`
+callback that hands control back to the render loop every so often, to draw
+the spinner and allow canceling.
 """
 
 import time
@@ -14,7 +14,7 @@ from .pieces import ORIENTATIONS, PIECE_NAMES, bounds_of
 
 
 class Cancelled(Exception):
-    """El usuario aborto la verificacion."""
+    """The user aborted verification."""
 
 
 def _popcount(x):
@@ -22,11 +22,11 @@ def _popcount(x):
 
 
 def _build(cell_list):
-    """Precalcula, para cada celda, las colocaciones que la cubren.
+    """Precomputes, for each cell, the placements that cover it.
 
-    Devuelve (covers, neighbours): `covers[i]` es la lista de (bit_de_pieza,
-    mascara) de toda colocacion legal que ocupa la celda `i`, y `neighbours[i]`
-    la mascara de las celdas ortogonalmente adyacentes dentro de la silueta.
+    Returns (covers, neighbours): `covers[i]` is the list of (piece_bit, mask)
+    for every legal placement that occupies cell `i`, and `neighbours[i]` is
+    the mask of orthogonally adjacent cells within the silhouette.
     """
     n = len(cell_list)
     idx = {cell: i for i, cell in enumerate(cell_list)}
@@ -67,7 +67,7 @@ def _build(cell_list):
 
 
 def _regions_ok(free, neighbours):
-    """Poda: toda region conexa de celdas libres debe ser multiplo de 5."""
+    """Pruning: every connected region of free cells must be a multiple of 5."""
     while free:
         low = free & -free
         region = low
@@ -88,10 +88,10 @@ def _regions_ok(free, neighbours):
 
 
 def solve(cell_list, time_limit=10.0, on_tick=None, tick_every=20000):
-    """Busca una solucion. Devuelve (placements | None, timed_out).
+    """Searches for a solution. Returns (placements | None, timed_out).
 
-    `placements` es una lista de (nombre, mascara). `on_tick(nodes)` se llama
-    cada `tick_every` nodos y puede lanzar Cancelled para abortar.
+    `placements` is a list of (name, mask). `on_tick(nodes)` is called every
+    `tick_every` nodes and may raise Cancelled to abort.
     """
     cell_list = list(cell_list)
     n = len(cell_list)
@@ -136,6 +136,6 @@ def solve(cell_list, time_limit=10.0, on_tick=None, tick_every=20000):
 
 
 def check_solvable(cell_list, time_limit=10.0, on_tick=None):
-    """Igual que solve() pero solo con el veredicto: (solvable, timed_out)."""
+    """Same as solve() but with just the verdict: (solvable, timed_out)."""
     placements, timed_out = solve(cell_list, time_limit, on_tick)
     return placements is not None, timed_out

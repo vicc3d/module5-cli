@@ -1,10 +1,10 @@
-"""Estado del juego: tablero, piezas colocadas, fantasma, reloj y victoria.
+"""Game state: board, placed pieces, ghost piece, clock, and victory.
 
-Es el equivalente del bloque de estado de src/main.js, sin nada de dibujo: se
-puede instanciar y jugar entero sin terminal (asi estan escritas las pruebas).
-La diferencia de interaccion con la web es que aca el mouse se reemplaza por un
-cursor que se mueve con el teclado; el fantasma sigue anclandose por el
-centroide de la orientacion, igual que alli.
+The equivalent of the state block in src/main.js, with none of the drawing:
+it can be instantiated and played through entirely without a terminal (that's
+how the tests are written). The interaction difference from the web is that
+here the mouse is replaced by a cursor that moves with the keyboard; the
+ghost piece still anchors by the orientation's centroid, same as there.
 """
 
 import time
@@ -30,22 +30,22 @@ class Ghost:
 
 
 class Game:
-    """Una partida en curso (o ninguna, si mode es None)."""
+    """A game in progress (or none, if mode is None)."""
 
     def __init__(self):
         self.mode = None          # 'classic' | 'level' | 'custom'
         self.level_index = 0
         self.board = None
         self.target = set()
-        self.placed = {}          # nombre -> {'orient', 'anchor_r', 'anchor_c', 'cells'}
-        self.occupied = {}        # (r, c) -> nombre
+        self.placed = {}          # name -> {'orient', 'anchor_r', 'anchor_c', 'cells'}
+        self.occupied = {}        # (r, c) -> name
         self.sel = None           # {'name', 'orient'}
         self.cursor = (0, 0)
-        self.start_time = None    # monotonic, en segundos
+        self.start_time = None    # monotonic, in seconds
         self.end_time = None
         self.current_slot = None
 
-    # --- arranque ----------------------------------------------------------
+    # --- startup -------------------------------------------------------------
 
     def start(self, mode, board, level_index=0):
         self.mode = mode
@@ -72,7 +72,7 @@ class Game:
         self.start("custom", board)
 
     def _initial_cursor(self):
-        """Arranca en la celda valida mas cercana al centro del tablero."""
+        """Starts on the valid cell closest to the center of the board."""
         cr, cc = self.board.rows // 2, self.board.cols // 2
         if (cr, cc) in self.target:
             return (cr, cc)
@@ -85,10 +85,10 @@ class Game:
         self.start_time = None
         self.end_time = None
 
-    # --- reloj -------------------------------------------------------------
+    # --- clock -----------------------------------------------------------
 
     def elapsed(self):
-        """Segundos jugados (0 hasta colocar la primera pieza)."""
+        """Seconds played (0 until the first piece is placed)."""
         if self.start_time is None:
             return 0.0
         return (self.end_time or time.monotonic()) - self.start_time
@@ -96,7 +96,7 @@ class Game:
     def elapsed_ms(self):
         return int(self.elapsed() * 1000)
 
-    # --- seleccion y fantasma ---------------------------------------------
+    # --- selection and ghost piece ------------------------------------------
 
     def select(self, name):
         if name in self.placed or name not in PIECE_DEFS:
@@ -108,7 +108,7 @@ class Game:
         self.sel = None
 
     def cycle_selection(self, step):
-        """Pasa a la siguiente pieza disponible (TAB)."""
+        """Moves to the next available piece (TAB)."""
         from .pieces import PIECE_NAMES
         free = [n for n in PIECE_NAMES if n not in self.placed]
         if not free:
@@ -132,7 +132,7 @@ class Game:
             self.sel["orient"] = flip_h(self.sel["orient"])
 
     def ghost_at(self, r, c):
-        """El fantasma centrado en (r, c), como en la version web."""
+        """The ghost piece centered on (r, c), like the web version."""
         if not self.sel:
             return None
         cr, cc = centroid_of(self.sel["orient"])
@@ -155,10 +155,10 @@ class Game:
             return True
         return False
 
-    # --- colocar y retirar -------------------------------------------------
+    # --- placing and taking back ---------------------------------------------
 
     def place(self):
-        """Coloca la pieza seleccionada. Devuelve True si entro."""
+        """Places the selected piece. Returns True if it fit."""
         g = self.ghost()
         if not g or not g.valid:
             return False
@@ -179,7 +179,7 @@ class Game:
         return True
 
     def pickup(self, name):
-        """Retira una pieza colocada y la deja seleccionada (como en la web)."""
+        """Takes back a placed piece and leaves it selected (like the web)."""
         p = self.placed.pop(name, None)
         if not p:
             return False
@@ -196,25 +196,25 @@ class Game:
     def is_complete(self):
         return len(self.occupied) == len(self.target) and bool(self.target)
 
-    # --- solucion canonica (solo clasico) ---------------------------------
+    # --- canonical solution (classic only) -----------------------------------
 
     def canonical_solution(self):
-        """Forma canonica invariante a rotacion de 180 y espejos del tablero.
+        """Canonical form invariant to 180-degree rotation and board mirrors.
 
-        Identica a canonicalSolution() de la web, para que la cuenta de
-        soluciones unicas signifique lo mismo en las dos versiones.
+        Identical to the web's canonicalSolution(), so the count of unique
+        solutions means the same thing in both versions.
         """
         g = [self.occupied.get((r, c), ".") for r in range(6) for c in range(10)]
         idx = lambda r, c: r * 10 + c
         variants = [
             "".join(g),
             "".join(reversed(g)),                                              # 180
-            "".join(g[idx(5 - i // 10, i % 10)] for i in range(60)),           # espejo vertical
-            "".join(g[idx(i // 10, 9 - (i % 10))] for i in range(60)),         # espejo horizontal
+            "".join(g[idx(5 - i // 10, i % 10)] for i in range(60)),           # vertical mirror
+            "".join(g[idx(i // 10, 9 - (i % 10))] for i in range(60)),         # horizontal mirror
         ]
         return min(variants)
 
-    # --- partidas guardadas ------------------------------------------------
+    # --- saved games -----------------------------------------------------
 
     def snapshot(self):
         if self.mode is None:
@@ -244,7 +244,7 @@ class Game:
         return snap
 
     def restore(self, snap):
-        """Rehidrata una partida guardada. False si el snapshot no sirve."""
+        """Rehydrates a saved game. False if the snapshot is invalid."""
         try:
             mode = snap["mode"]
             if mode == "classic":
@@ -261,8 +261,8 @@ class Game:
                 orient = tuple(tuple(c) for c in p["orient"])
                 ar, ac = p["anchor_r"], p["anchor_c"]
                 cells = [(r + ar, c + ac) for r, c in orient]
-                # un save manipulado (o de otra version del tablero) no debe
-                # dejar el juego en un estado imposible de terminar
+                # a tampered save (or one from a different board version)
+                # shouldn't leave the game in an impossible-to-finish state
                 if name not in PIECE_DEFS or name in self.placed:
                     return False
                 if any(c not in self.target or c in self.occupied for c in cells):
@@ -281,7 +281,7 @@ class Game:
 
 
 def fmt_time(seconds):
-    """mm:ss.d — el mismo formato que fmtTime() en la web."""
+    """mm:ss.d — the same format as fmtTime() in the web version."""
     if seconds is None:
         return "--:--.-"
     m = int(seconds // 60)

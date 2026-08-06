@@ -1,8 +1,8 @@
-"""Las pantallas del juego y el bucle principal.
+"""The game's screens and the main loop.
 
-Cada pantalla sabe dibujarse sobre el buffer y responder a un evento. Se
-apilan: las marcadas con `overlay = True` (modales, ayuda) se pintan encima de
-la de abajo en vez de reemplazarla.
+Each screen knows how to draw itself onto the buffer and respond to an event.
+They stack: the ones marked `overlay = True` (modals, help) paint on top of
+the one below instead of replacing it.
 """
 
 import time
@@ -34,7 +34,7 @@ from .ui import (
 
 MIN_W, MIN_H = 46, 16
 
-# Tipografia de bloques para el titulo del menu (5 filas, 5 columnas por letra).
+# Block typeface for the menu title (5 rows, 5 columns per letter).
 FONT = {
     "M": ["#   #", "## ##", "# # #", "#   #", "#   #"],
     "O": [" ### ", "#   #", "#   #", "#   #", " ### "],
@@ -57,10 +57,10 @@ def big_text(word):
 
 
 class ZoomMixin:
-    """Zoom manual del area de juego, compartido por el tablero y el editor.
+    """Manual zoom of the play area, shared by the board and the editor.
 
-    En teclado US `+` es Shift-= y `_` es Shift--, justo las dos teclas que
-    quedan libres: `-` y `=` sin Shift ya seleccionan las piezas Y y Z.
+    On a US keyboard `+` is Shift-= and `_` is Shift--, exactly the two keys
+    left free: `-` and `=` without Shift already select pieces Y and Z.
     """
 
     scale = (2, 1)
@@ -76,9 +76,9 @@ class ZoomMixin:
     def zoom_by(self, delta):
         idx = min(max(self.scale_index + delta, 0), self.max_index)
         if idx == self.scale_index:
-            return  # ya esta en el tope: no hay nada que avisar
-        # si el zoom manual coincide con lo que el juego elegiria solo, se
-        # vuelve al modo automatico para que siga adaptandose al redimensionar
+            return  # already at the limit: nothing to report
+        # if the manual zoom matches what the game would pick on its own, it
+        # switches back to automatic mode so it keeps adapting on resize
         self.app.set_zoom(None if idx == self.auto_index else idx)
         if idx == self.auto_index:
             self.app.notify(t("zoom_auto"))
@@ -86,7 +86,7 @@ class ZoomMixin:
             self.app.notify(t("zoom_level", idx + 1, self.max_index + 1))
 
     def handle_zoom_key(self, ch):
-        """True si la tecla era de zoom."""
+        """True if the key was a zoom key."""
         if ch == "+":
             self.zoom_by(1)
             return True
@@ -96,7 +96,7 @@ class ZoomMixin:
         return False
 
     def handle_zoom_wheel(self, ev):
-        """True si el evento era rueda del mouse (zoom, como en la web)."""
+        """True if the event was the mouse wheel (zoom, like the web version)."""
         if getattr(ev, "kind", None) != "wheel":
             return False
         self.zoom_by(1 if ev.button == "up" else -1)
@@ -104,7 +104,7 @@ class ZoomMixin:
 
 
 class Screen:
-    """Base de todas las pantallas."""
+    """Base for all screens."""
 
     overlay = False
 
@@ -130,7 +130,7 @@ class Screen:
         return None
 
 
-# --- cromo compartido -------------------------------------------------------
+# --- shared chrome ------------------------------------------------------------
 
 def header(scr, theme, title, right=None):
     w = scr.w
@@ -151,12 +151,13 @@ def footer(scr, theme, pairs):
 
 
 def menu_columns(items, w, min_text=24):
-    """Reparte el ancho entre la columna de texto y la de la cifra.
+    """Splits the width between the text column and the value column.
 
-    Devuelve (x_de_la_linea, ancho_del_texto) relativos al margen izquierdo, o
-    (None, w - 4) si no hay ancho para dos columnas. La cifra vive a la derecha
-    de una linea vertical y la descripcion nunca la cruza: si el texto pudiera
-    seguir por debajo, las dos cosas se leen como una sola columna.
+    Returns (line_x, text_width) relative to the left margin, or
+    (None, w - 4) if there's no room for two columns. The value lives to the
+    right of a vertical line and the description never crosses it: if the
+    text could continue below it, the two things would read as a single
+    column.
     """
     note_w = max((len(item.get("note") or "") for item in items), default=0)
     if not note_w:
@@ -168,10 +169,10 @@ def menu_columns(items, w, min_text=24):
 
 
 def menu_plan(items, index, w, gap=1, desc_gap=1, max_desc=2, text_w=None):
-    """Calcula las filas de la lista y su alto, sin dibujar nada.
+    """Computes the list's rows and their height, without drawing anything.
 
-    Dibujar y medir salen de aca mismo para que no se puedan desincronizar.
-    `desc_gap` es el aire que rodea a la descripcion, arriba y abajo.
+    Drawing and measuring both come from here so they can't get out of sync.
+    `desc_gap` is the space around the description, above and below.
     """
     if text_w is None:
         text_w = menu_columns(items, w)[1]
@@ -188,31 +189,32 @@ def menu_plan(items, index, w, gap=1, desc_gap=1, max_desc=2, text_w=None):
             lines = wrap(desc, text_w)
             shown = lines[:max_desc]
             if len(lines) > max_desc and shown:
-                # cortada por falta de alto: que se note que sigue
+                # cut off for lack of height: make it clear it continues
                 shown[-1] = shown[-1][:max(0, text_w - 3)].rstrip() + "..."
             for line in shown:
                 rows.append((yy, "desc", line))
                 yy += 1
-            # el aire de abajo no se suma al de entre opciones: se solapan
+            # the space below doesn't add to the between-options one: they overlap
             step = max(gap, desc_gap)
         yy += step
-    return rows, yy - step  # el aire que sobra detras de la ultima no cuenta
+    return rows, yy - step  # the space left over after the last one doesn't count
 
 
 def menu_worst_height(items, w, gap=1, desc_gap=1, max_desc=2):
-    """El alto con la opcion mas alta activa: el layout no cambia al navegar."""
+    """The height with the tallest option active: the layout doesn't shift while navigating."""
     text_w = menu_columns(items, w)[1]
     return max(menu_plan(items, i, w, gap, desc_gap, max_desc, text_w)[1]
                for i in range(len(items))) if items else 0
 
 
 def menu_rows(scr, theme, x, y, w, items, index, gap=1, desc_gap=1, max_desc=2):
-    """Lista vertical de opciones con descripcion; devuelve el alto usado."""
+    """Vertical list of options with a description; returns the height used."""
     div, text_w = menu_columns(items, w)
     rows, height = menu_plan(items, index, w, gap, desc_gap, max_desc, text_w)
 
-    # la linea corre por todo el bloque: separa la columna de cifras de la de
-    # texto, para que la descripcion no parezca continuar debajo de la cifra
+    # the line runs the whole block's height: it separates the value column
+    # from the text one, so the description doesn't look like it continues
+    # below the value
     if div is not None:
         for dy in range(height):
             scr.put(x + div, y + dy, g("v"), theme.border, theme.bg)
@@ -227,7 +229,7 @@ def menu_rows(scr, theme, x, y, w, items, index, gap=1, desc_gap=1, max_desc=2):
         disabled = item.get("disabled")
         note = item.get("note")
         if active:
-            # el resaltado se corta en la linea: no la pisa
+            # the highlight stops at the line: it doesn't cross it
             scr.fill(x, yy, div if div is not None else w, 1, " ", theme.text, theme.panel)
             scr.put(x, yy, g("right"), theme.accent, theme.panel, BOLD)
         bg = theme.panel if active else theme.bg
@@ -243,7 +245,7 @@ def menu_rows(scr, theme, x, y, w, items, index, gap=1, desc_gap=1, max_desc=2):
     return height
 
 
-# --- menu principal ---------------------------------------------------------
+# --- main menu ------------------------------------------------------------
 
 class MenuScreen(Screen):
     def __init__(self, app):
@@ -269,11 +271,11 @@ class MenuScreen(Screen):
              "desc": t("quit_desc")},
         ]
 
-    # Variantes de layout (logo grande, aire entre opciones, aire alrededor de
-    # la descripcion, lineas de descripcion), de la mas holgada a la mas
-    # apretada: se usa la primera que entre sobre la linea final. El aire que
-    # rodea a la descripcion es lo ultimo que se sacrifica -- es justo lo que
-    # evita que el texto se lea pegado a la cifra de arriba.
+    # Layout variants (big logo, space between options, space around the
+    # description, description lines), from the roomiest to the tightest: the
+    # first one that fits above the footer line is used. The space around the
+    # description is the last thing sacrificed -- it's exactly what keeps the
+    # text from reading as glued to the value above it.
     LAYOUTS = [
         (True, 1, 1, 2), (False, 1, 1, 2), (False, 0, 1, 2), (False, 0, 1, 1),
         (False, 0, 0, 1), (False, 0, 0, 0),
@@ -285,13 +287,13 @@ class MenuScreen(Screen):
         items = self.items()
         w = min(64, scr.w - 4)
         x = (scr.w - w) // 2
-        limit = scr.h - 3  # el bloque tiene que terminar antes del pie
+        limit = scr.h - 3  # the block has to end before the footer
 
         big, gap, desc_gap, max_desc = self.LAYOUTS[-1]
         for cand in self.LAYOUTS:
             top = 1 + (6 if cand[0] else 2) + 2
-            # el hueco que va detras de la ultima opcion es aire sobrante: no
-            # tiene que entrar antes del pie, asi que no se cuenta
+            # the gap after the last option is leftover space: it doesn't
+            # have to fit above the footer, so it isn't counted
             h = menu_worst_height(items, w, cand[1], cand[2], cand[3])
             if top + h <= limit:
                 big, gap, desc_gap, max_desc = cand
@@ -350,7 +352,7 @@ class MenuScreen(Screen):
             app.confirm_quit()
 
 
-# --- seleccion de niveles ---------------------------------------------------
+# --- level selection --------------------------------------------------------
 
 class LevelsScreen(Screen):
     def __init__(self, app):
@@ -369,7 +371,7 @@ class LevelsScreen(Screen):
         cols = max(1, min(4, (scr.w - 2) // col_w))
         rows = (len(LEVELS) + cols - 1) // cols
         avail = scr.h - 5
-        if rows > avail:  # terminal baja: mas columnas, menos filas
+        if rows > avail:  # short terminal: more columns, fewer rows
             cols = max(1, min(6, (scr.w - 2) // 16))
             col_w = max(14, (scr.w - 2) // cols)
             rows = (len(LEVELS) + cols - 1) // cols
@@ -393,9 +395,9 @@ class LevelsScreen(Screen):
             scr.put(x, y, num, theme.accent if unlocked else theme.text_dim, bg,
                     BOLD if active else 0)
             scr.put(x + 3, y, label[:col_w - 10], fg, bg, BOLD if active else 0)
-            # solo se marca lo ya resuelto (con su mejor tiempo); un nivel
-            # abierto sin resolver no lleva marca, y el bloqueado ya se
-            # distingue por el nombre oculto
+            # only what's already solved gets a mark (with its best time); an
+            # unlocked but unsolved level carries no mark, and the locked one
+            # is already set apart by its hidden name
             if best:
                 mark = fmt_ms(best)
                 scr.put(x + col_w - 2 - len(mark), y, mark, theme.ok, bg)
@@ -443,7 +445,7 @@ class LevelsScreen(Screen):
             self.app.push(HelpScreen(self.app))
 
 
-# --- mis desafios -----------------------------------------------------------
+# --- my challenges -----------------------------------------------------------
 
 class CustomsScreen(Screen):
     def __init__(self, app):
@@ -546,7 +548,7 @@ class CustomsScreen(Screen):
         ))
 
 
-# --- pantalla de juego ------------------------------------------------------
+# --- game screen --------------------------------------------------------------
 
 PANEL_W = 26
 
@@ -572,9 +574,9 @@ class GameScreen(ZoomMixin, Screen):
         scr.clear(theme.bg)
         header(scr, theme, self.title(), fmt_time(gm.elapsed()))
 
-        # el panel lateral se decide con el tablero en su tamano minimo, y con
-        # el espacio que quede se elige la celda mas grande que entre: en una
-        # terminal amplia el tablero se ve grande, no perdido en una esquina
+        # whether the side panel fits is decided with the board at its
+        # minimum size, and the largest cell that fits is picked from what's
+        # left: in a wide terminal the board looks big, not stranded in a corner
         min_w, _ = board_size(gm.board)
         show_panel = scr.w >= min_w + PANEL_W + 4
         area_w = scr.w - (PANEL_W + 2 if show_panel else 0)
@@ -595,8 +597,8 @@ class GameScreen(ZoomMixin, Screen):
         label = t("tray") + " "
         count = t("placed_count", len(gm.placed), gm.board.pieces)
         scr.put(1, tray_y, label, theme.text_dim, theme.panel)
-        # la bandeja tiene que frenar antes del contador, o en una terminal
-        # angosta las dos cosas se pisan
+        # the tray has to stop before the counter, or on a narrow terminal
+        # the two overlap
         tray_x = 1 + len(label)
         tray_w = max(0, scr.w - tray_x - len(count) - 2)
         draw_tray(scr, tray_x, tray_y, tray_w, gm, theme)
@@ -617,18 +619,18 @@ class GameScreen(ZoomMixin, Screen):
             ("esc", t("keys_menu")),
         ])
 
-    # Alto reservado para la miniatura de la pieza en la mano: la I vertical
-    # ocupa 5 filas. Se reserva siempre para que la caja no cambie de tamano
-    # cada vez que se toma o se suelta una pieza.
+    # Height reserved for the thumbnail of the piece in hand: the vertical I
+    # takes up 5 rows. Always reserved so the box doesn't change size every
+    # time a piece is picked up or put down.
     SHAPE_H = 5
 
     def panel_body(self):
-        """Las secciones del panel, ya resueltas, para poder medirlas antes de
-        dibujar la caja."""
+        """The panel's sections, already resolved, so they can be measured
+        before drawing the box."""
         gm = self.game
         sil_h = 0
         if gm.mode != "classic":
-            # cada linea de silueta son 2 filas del tablero (medios bloques)
+            # each silhouette line is 2 board rows (half blocks)
             sil_h = (gm.board.rows + 1) // 2 + 1
         info = []
         if gm.mode == "classic":
@@ -662,8 +664,8 @@ class GameScreen(ZoomMixin, Screen):
         yy = y + 1
         line(yy, fmt_time(gm.elapsed()), theme.accent, BOLD)
         yy += 2
-        # silueta objetivo (en clasico el objetivo es el rectangulo completo:
-        # mostrarlo no aporta nada, igual que en la version web)
+        # target silhouette (in classic mode the target is the full
+        # rectangle: showing it adds nothing, same as the web version)
         if sil_h:
             line(yy, t("target"), theme.text_dim, BOLD)
             yy += 1
@@ -695,7 +697,7 @@ class GameScreen(ZoomMixin, Screen):
                 return ch
         return None
 
-    # -- interaccion --
+    # -- interaction --
 
     def handle(self, ev):
         gm = self.game
@@ -755,8 +757,8 @@ class GameScreen(ZoomMixin, Screen):
             for pname, pkey in PIECE_KEYS.items():
                 if ch == pkey:
                     if pname in gm.placed:
-                        # la pieza ya esta en el tablero: retirarla (equivale
-                        # al clic sobre la pieza en la version web)
+                        # the piece is already on the board: take it back
+                        # (equivalent to clicking the piece in the web version)
                         gm.pickup(pname)
                     elif gm.sel and gm.sel["name"] == pname:
                         gm.deselect()
@@ -791,7 +793,7 @@ class GameScreen(ZoomMixin, Screen):
             gm.pickup_at_cursor()
 
     def cell_at(self, x, y):
-        """Convierte coordenadas de pantalla a celda del tablero."""
+        """Converts screen coordinates to a board cell."""
         gm = self.game
         cw, chh = self.scale
         r = (y - self.board_y - 1) // chh
@@ -803,10 +805,10 @@ class GameScreen(ZoomMixin, Screen):
         return None
 
 
-# --- editor de desafios -----------------------------------------------------
+# --- challenge editor ---------------------------------------------------------
 
 ED_ROWS, ED_COLS = 6, 10
-# tablero ficticio del tamano de la grilla, solo para elegir la escala
+# fictitious board the size of the grid, just to pick the scale
 _ED_BOARD = Board("editor", [(r, c) for r in range(ED_ROWS) for c in range(ED_COLS)])
 
 
@@ -815,10 +817,10 @@ class EditorScreen(ZoomMixin, Screen):
         super().__init__(app)
         self.cells = set()
         self.cursor = (0, 0)
-        self.verified = None    # clave de la silueta verificada como resoluble
+        self.verified = None    # key of the silhouette verified as solvable
         self.status = ""
         self.status_kind = ""
-        self.painting = None    # valor que se esta pintando al arrastrar
+        self.painting = None    # value being painted while dragging
         self.spinner = 0
 
     def key(self):
@@ -829,7 +831,7 @@ class EditorScreen(ZoomMixin, Screen):
         scr.clear(theme.bg)
         header(scr, theme, t("create_challenge"),
                t("cells_line", len(self.cells)))
-        # misma escala automatica que el tablero de juego
+        # same automatic scale as the game board
         self.apply_scale(_ED_BOARD, scr.w - 4, scr.h - 9)
         cw, chh = self.scale
         bw = ED_COLS * cw + 3
@@ -933,7 +935,7 @@ class EditorScreen(ZoomMixin, Screen):
             self.painting = (r, c) not in self.cells
             self.toggle((r, c))
         elif ev.kind == "drag" and self.painting is not None:
-            # arrastrar pinta continuo, como en el editor de la version web
+            # dragging paints continuously, like the web version's editor
             if self.painting and (r, c) not in self.cells:
                 self.cells.add((r, c))
                 self.invalidate()
@@ -969,8 +971,8 @@ class EditorScreen(ZoomMixin, Screen):
         cancelled = [False]
 
         def on_tick(_nodes):
-            # el solver le devuelve el control al render cada tantos nodos:
-            # asi el spinner gira y ESC puede cancelar
+            # the solver hands control back to the renderer every so many
+            # nodes: that's what spins the spinner and lets ESC cancel
             self.spinner += 1
             self.status = "%s %s  (%s)" % (
                 t("verifying_big"), g("spinner")[self.spinner % len(g("spinner"))],
@@ -1021,7 +1023,7 @@ class EditorScreen(ZoomMixin, Screen):
                                    max_len=24))
 
 
-# --- importar un codigo -----------------------------------------------------
+# --- import a code -----------------------------------------------------------
 
 class ImportScreen(Screen):
     overlay = True
@@ -1092,7 +1094,7 @@ class ImportScreen(Screen):
         self.app.notify(t("imported", ch["name"]))
 
 
-# --- configuracion ----------------------------------------------------------
+# --- settings ------------------------------------------------------------
 
 class SettingsScreen(Screen):
     def __init__(self, app):
@@ -1111,9 +1113,9 @@ class SettingsScreen(Screen):
              "note": t("yes") if st.settings.get("mouse", True) else t("no")},
             {"key": "slots", "label": t("saved_games"),
              "note": "%d/5" % len([k for k in st.slots if st.slots[k]])},
-            # la cifra va como descripcion y no como valor: en la columna de
-            # valores se leeria como el ajuste de esta fila, cuando en realidad
-            # dice lo que se perderia al borrar
+            # the count goes as a description, not as a value: in the value
+            # column it would read as this row's setting, when it's actually
+            # saying what would be lost by clearing it
             {"key": "clear", "label": t("clear_progress"),
              "desc": "%s %s %s" % (
                  t("stat_classic", len(st.solutions), CLASSIC_SOLUTIONS),
@@ -1249,7 +1251,7 @@ class SlotsScreen(Screen):
             self.app.load_slot(self.index)
 
 
-# --- modales y ayuda --------------------------------------------------------
+# --- modals and help --------------------------------------------------------
 
 class Modal(Screen):
     overlay = True
@@ -1287,7 +1289,7 @@ class Modal(Screen):
             if y + 3 + i >= y + h - 2:
                 break
             scr.put(x + 3, y + 3 + i, line, theme.text, theme.panel)
-        # botones
+        # buttons
         labels = [" %s " % b[0] for b in self.buttons]
         total = sum(len(s) + 2 for s in labels)
         bx = x + max(2, (w - total) // 2)
@@ -1312,7 +1314,7 @@ class Modal(Screen):
         elif name == "esc":
             self.app.pop()
         elif name == "char":
-            # inicial del boton como atajo
+            # a button's initial as its shortcut
             for i, (label, _) in enumerate(self.buttons):
                 if label[:1].lower() == ev.char.lower():
                     self.activate(i)
@@ -1331,8 +1333,8 @@ class PromptScreen(Screen):
     def __init__(self, app, prompt, placeholder, on_accept, max_len=60):
         super().__init__(app)
         self.prompt = prompt
-        # el campo arranca vacio y el valor por defecto se muestra apagado
-        # detras: escribir no tiene que borrar nada primero
+        # the field starts empty and the default value shows dimmed behind
+        # it: typing shouldn't have to clear anything first
         self.placeholder = placeholder
         self.field = TextField("", max_len=max_len)
         self.on_accept = on_accept
@@ -1411,7 +1413,7 @@ class HelpScreen(Screen):
 
 
 class TooSmallScreen(Screen):
-    """Se muestra cuando la terminal no da el minimo; desaparece al agrandarla."""
+    """Shown when the terminal doesn't meet the minimum; disappears once enlarged."""
 
     def draw(self, scr):
         theme = self.theme

@@ -1,6 +1,6 @@
 #!/bin/sh
-# Module 5 - lanzador. Busca un Python 3 y arranca el juego.
-# No compila ni instala nada: el juego es solo biblioteca estandar.
+# Module 5 launcher. Finds a Python 3 and starts the game.
+# Nothing to compile or install: the game is pure standard library.
 
 DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
@@ -15,9 +15,9 @@ done
 
 if [ -z "$PY" ]; then
     cat >&2 <<'EOF'
-Module 5 necesita Python 3.8 o mas nuevo, y no encontro ninguno.
+Module 5 needs Python 3.8 or newer, and couldn't find one.
 
-  macOS  : ya viene con python3 (si falta: xcode-select --install)
+  macOS  : already ships with python3 (if missing: xcode-select --install)
   Debian : sudo apt install python3
   Fedora : sudo dnf install python3
   Arch   : sudo pacman -S python
@@ -25,7 +25,7 @@ EOF
     exit 1
 fi
 
-# el .pyz (un solo archivo, generado con build.sh) tiene prioridad si existe
+# the .pyz (single file, built with build.sh) takes priority if present
 if [ -f "$DIR/m5.pyz" ]; then
     exec "$PY" "$DIR/m5.pyz" "$@"
 fi

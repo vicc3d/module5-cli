@@ -1,11 +1,11 @@
-"""Motor de terminal: modo raw, pantalla alternativa, render con doble buffer
-y lectura de teclado / mouse. Solo biblioteca estandar.
+"""Terminal engine: raw mode, alternate screen, double-buffered rendering,
+and keyboard / mouse input. Standard library only.
 
-No se usa curses a proposito: se necesita color de 24 bits para la paleta neon
-del juego, y el diff propio permite repintar solo lo que cambio (el tablero
-entero son ~250 celdas, repintarlo completo cada tick haria parpadear sobre
-SSH). Todo lo que se emite son secuencias ANSI que entiende cualquier terminal
-de Linux o macOS -- sin X11, sin compilar nada.
+curses is deliberately not used: 24-bit color was needed for the game's neon
+palette, and a custom diff lets it repaint only what changed (the whole board
+is ~250 cells; repainting it fully every tick would flicker over SSH).
+Everything emitted is ANSI sequences that any Linux or macOS terminal
+understands -- no X11, nothing to compile.
 """
 
 import codecs
@@ -17,7 +17,7 @@ import sys
 import termios
 import tty
 
-# --- atributos de estilo ----------------------------------------------------
+# --- style attributes -------------------------------------------------------
 
 BOLD = 1
 DIM = 2
@@ -25,7 +25,7 @@ ITALIC = 4
 UNDERLINE = 8
 REVERSE = 16
 
-# --- deteccion y conversion de color ---------------------------------------
+# --- color detection and conversion -----------------------------------------
 
 TRUECOLOR, C256, C16, MONO = "truecolor", "256", "16", "mono"
 
@@ -51,7 +51,7 @@ def detect_color_mode():
 
 
 def rgb(hex_or_tuple):
-    """Normaliza '#rrggbb' o (r,g,b) a un entero 0xRRGGBB."""
+    """Normalizes '#rrggbb' or (r,g,b) to an 0xRRGGBB integer."""
     if isinstance(hex_or_tuple, int):
         return hex_or_tuple
     if isinstance(hex_or_tuple, tuple):
@@ -66,7 +66,7 @@ def _components(color):
 
 
 def mix(a, b, t):
-    """Interpola dos colores (t=0 -> a, t=1 -> b). Para atenuar y resaltar."""
+    """Interpolates two colors (t=0 -> a, t=1 -> b). For dimming and highlighting."""
     ar, ag, ab = _components(rgb(a))
     br, bg, bb = _components(rgb(b))
     return (
@@ -78,7 +78,7 @@ def mix(a, b, t):
 
 def _to_256(color):
     r, g, b = _components(color)
-    # gris si los tres canales estan cerca
+    # gray if the three channels are close together
     if abs(r - g) < 12 and abs(g - b) < 12 and abs(r - b) < 12:
         if r < 8:
             return 16
@@ -108,7 +108,7 @@ def _to_16(color):
 
 
 class Palette:
-    """Traduce colores RGB a secuencias SGR segun lo que soporte la terminal."""
+    """Translates RGB colors to SGR sequences based on what the terminal supports."""
 
     def __init__(self, mode):
         self.mode = mode
@@ -150,16 +150,16 @@ class Palette:
         return "%d;1" % base if i >= 8 and not is_bg else str(base + (60 if i >= 8 else 0))
 
 
-# --- buffer de pantalla -----------------------------------------------------
+# --- screen buffer -----------------------------------------------------
 
 _BLANK = (" ", None, None, 0)
 
 
 class Screen:
-    """Rejilla de celdas (char, fg, bg, attr) con volcado diferencial.
+    """Grid of (char, fg, bg, attr) cells with differential flushing.
 
-    Se dibuja todo en `buf` y `flush()` compara contra el frame anterior para
-    emitir solo los tramos que cambiaron.
+    Everything is drawn into `buf`, and `flush()` compares against the
+    previous frame to emit only the runs that changed.
     """
 
     def __init__(self, palette):
@@ -174,7 +174,7 @@ class Screen:
             return
         self.w, self.h = w, h
         self.buf = [[_BLANK] * w for _ in range(h)]
-        self.prev = None  # fuerza repintado completo
+        self.prev = None  # forces a full repaint
         self.clear()
 
     def force_redraw(self):
@@ -194,7 +194,7 @@ class Screen:
                 row[xx] = cell
 
     def put(self, x, y, text, fg=None, bg=None, attr=0, max_w=None):
-        """Escribe `text` en (x, y), recortando en los bordes. Devuelve el x final."""
+        """Writes `text` at (x, y), clipping at the edges. Returns the final x."""
         if y < 0 or y >= self.h:
             return x
         limit = self.w if max_w is None else min(self.w, x + max_w)
@@ -212,12 +212,12 @@ class Screen:
         return self.put(x0 + max(0, (w - len(text)) // 2), y, text, fg, bg, attr, max_w=w)
 
     def render(self):
-        """Devuelve los bytes ANSI del frame (solo las diferencias)."""
+        """Returns the frame's ANSI bytes (differences only)."""
         pal = self.pal
         out = []
         prev = self.prev
-        cur_style = None  # (fg, bg, attr) actualmente activo en la terminal
-        cur_pos = None    # (x, y) donde quedo el cursor
+        cur_style = None  # (fg, bg, attr) currently active on the terminal
+        cur_pos = None    # (x, y) where the cursor ended up
 
         for y in range(self.h):
             row = self.buf[y]
@@ -227,12 +227,12 @@ class Screen:
                 if prow is not None and row[x] == prow[x]:
                     x += 1
                     continue
-                # tramo de celdas distintas (se toleran hasta 3 iguales
-                # seguidas antes de cortar: reposicionar el cursor cuesta
-                # mas bytes que reescribir un par de espacios)
+                # a run of differing cells (up to 3 matching ones in a row are
+                # tolerated before cutting: repositioning the cursor costs
+                # more bytes than rewriting a couple of spaces)
                 start = x
                 run = []
-                same = 0  # celdas iguales ya agregadas al final del tramo
+                same = 0  # matching cells already appended at the run's tail
                 while x < self.w:
                     if prow is not None and row[x] == prow[x]:
                         if same >= 3:
@@ -243,9 +243,9 @@ class Screen:
                     run.append(row[x])
                     x += 1
                 if same:
-                    # el tramo siempre arranca en una celda distinta, asi que
-                    # tras recortar la cola queda al menos una y x > start:
-                    # el bucle exterior siempre avanza
+                    # a run always starts on a differing cell, so after
+                    # trimming the tail at least one remains and x > start:
+                    # the outer loop always makes progress
                     del run[len(run) - same:]
                     x -= same
                 if cur_pos != (start, y):
@@ -260,9 +260,8 @@ class Screen:
 
         if not out:
             return b""
-        # 2026 = "synchronized output": la terminal presenta el frame de una
-        # sola vez y no se ve el barrido de arriba a abajo (se ignora si no
-        # esta soportado)
+        # 2026 = "synchronized output": the terminal presents the frame all at
+        # once, so no top-to-bottom tearing shows (ignored if unsupported)
         payload = "\x1b[?2026h" + "".join(out) + "\x1b[0m\x1b[?2026l"
         self.prev = [row[:] for row in self.buf]
         return payload.encode("utf-8", "replace")
@@ -289,7 +288,7 @@ def _sgr(pal, fg, bg, attr):
     return "\x1b[" + ";".join(parts) + "m"
 
 
-# --- eventos de entrada -----------------------------------------------------
+# --- input events ------------------------------------------------------------
 
 class Key:
     __slots__ = ("name", "char")
@@ -342,14 +341,14 @@ _PASTE_RE = re.compile(r"\A\x1b\[200~(.*?)\x1b\[201~", re.S)
 
 
 class Input:
-    """Lee stdin en modo raw y lo convierte en eventos Key / Mouse / Paste."""
+    """Reads stdin in raw mode and converts it into Key / Mouse / Paste events."""
 
     def __init__(self, fd):
         self.fd = fd
         self.pending = ""
-        # el decoder incremental se guarda las secuencias multibyte cortadas
-        # entre dos lecturas (pasa al escribir acentos en un nombre) y
-        # reemplaza los bytes invalidos sin tirar excepciones
+        # the incremental decoder holds on to multibyte sequences split
+        # across two reads (happens when typing accents into a name) and
+        # replaces invalid bytes instead of raising
         self._decoder = codecs.getincrementaldecoder("utf-8")("replace")
 
     def _read_available(self, timeout):
@@ -369,20 +368,20 @@ class Input:
         return True
 
     def poll(self, timeout=0.1):
-        """Devuelve la lista de eventos disponibles (puede estar vacia)."""
+        """Returns the list of available events (may be empty)."""
         self._read_available(timeout)
         events = []
         while self.pending:
             ev, consumed = self._parse()
             if consumed == 0:
-                # secuencia incompleta: esperar un poco mas por el resto
+                # incomplete sequence: wait a bit longer for the rest
                 if self._read_available(0.02):
                     continue
                 if self.pending == "\x1b":
                     self.pending = ""
                     events.append(Key("esc"))
                 else:
-                    # basura irreconocible: descartar el primer byte
+                    # unrecognizable garbage: discard the first byte
                     self.pending = self.pending[1:]
                 continue
             self.pending = self.pending[consumed:]
@@ -396,12 +395,12 @@ class Input:
 
         if ch == "\x1b":
             if len(s) == 1:
-                return None, 0  # puede ser ESC solo o el inicio de una secuencia
+                return None, 0  # could be a lone ESC or the start of a sequence
             m = _PASTE_RE.match(s)
             if m:
                 return Paste(m.group(1)), m.end()
             if s.startswith("\x1b[200~"):
-                return None, 0  # pegado incompleto: esperar el cierre
+                return None, 0  # incomplete paste: wait for the closing tag
             m = _MOUSE_RE.match(s)
             if m:
                 return _parse_mouse(m), m.end()
@@ -422,7 +421,7 @@ class Input:
                 return (Key(name) if name else None), m.end()
             if s.startswith("\x1bO"):
                 return None, 0
-            # ESC + tecla = alt-<tecla>; se trata como ESC suelto
+            # ESC + key = alt-<key>; treated as a lone ESC
             return Key("esc"), 1
 
         if ch in ("\r", "\n"):
@@ -453,11 +452,11 @@ def _parse_mouse(m):
     return Mouse(kind, button, x - 1, y - 1)
 
 
-# --- la terminal en si ------------------------------------------------------
+# --- the terminal itself -----------------------------------------------------
 
 class Terminal:
-    """Context manager: entra en modo raw + pantalla alternativa y restaura
-    todo al salir (incluso si el juego revienta, o si lo suspenden con ^Z)."""
+    """Context manager: enters raw mode + the alternate screen and restores
+    everything on exit (even if the game crashes, or gets suspended with ^Z)."""
 
     def __init__(self, mouse=True):
         self.in_fd = sys.stdin.fileno()
@@ -470,7 +469,7 @@ class Terminal:
         self.resized = True
         self._entered = False
 
-    # -- ciclo de vida --
+    # -- lifecycle --
 
     def __enter__(self):
         self._setup()
@@ -514,7 +513,7 @@ class Terminal:
         self.resized = True
 
     def _on_cont(self, *_):
-        # al volver de un ^Z hay que rehacer raw + pantalla alternativa
+        # coming back from a ^Z requires redoing raw mode + alternate screen
         self._setup()
         self.resized = True
 
@@ -524,7 +523,7 @@ class Terminal:
         os.kill(os.getpid(), signal.SIGTSTP)
         signal.signal(signal.SIGTSTP, self._on_tstp)
 
-    # -- salida --
+    # -- output --
 
     def write(self, text):
         data = text.encode("utf-8", "replace") if isinstance(text, str) else text
@@ -545,7 +544,7 @@ class Terminal:
         return max(1, cols), max(1, rows)
 
     def sync_size(self):
-        """Ajusta el buffer al tamano actual. True si cambio."""
+        """Adjusts the buffer to the current size. True if it changed."""
         w, h = self.size()
         changed = (w, h) != (self.screen.w, self.screen.h)
         self.screen.resize(w, h)
@@ -555,19 +554,19 @@ class Terminal:
     def present(self):
         self.write(self.screen.render())
 
-    # -- entrada --
+    # -- input --
 
     def poll(self, timeout=0.1):
         return self.input.poll(timeout)
 
-    # -- portapapeles --
+    # -- clipboard --
 
     def copy(self, text):
-        """Copia al portapapeles. Devuelve True si algun metodo funciono.
+        """Copies to the clipboard. Returns True if some method worked.
 
-        Se intenta primero OSC 52, que es una secuencia de escape y por lo
-        tanto funciona sin X11 e incluso a traves de SSH; despues las
-        herramientas del sistema, por si la terminal la tiene deshabilitada.
+        OSC 52 is tried first, since it's an escape sequence and so works
+        without X11 and even over SSH; then the system tools, in case the
+        terminal has it disabled.
         """
         import base64 as _b64
         import shutil

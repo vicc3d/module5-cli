@@ -1,7 +1,7 @@
-"""Los 20 niveles del modo Formas y el tablero clasico 6x10.
+"""The 20 levels of Shapes mode and the classic 6x10 board.
 
-Siluetas identicas a src/levels.js: ya estaban verificadas como resolubles con
-pentominos distintos mediante un solver de cobertura exacta.
+Silhouettes identical to src/levels.js: already verified as solvable with
+distinct pentominoes via an exact-cover solver.
 """
 
 RAW_LEVELS = [
@@ -123,7 +123,7 @@ XXXXXXXXXX
 XXXXXXXXXX"""),
 ]
 
-# Nombres en ingles, en el mismo orden (de src/i18n.js).
+# English names, in the same order (from src/i18n.js).
 LEVEL_NAMES_EN = [
     "Cross", "Step", "Corner", "Tower", "Block 3x5", "Pyramid", "Block 4x5",
     "The U", "Square 5x5", "Diamond", "Block 6x5", "The H", "Strip 3x10",
@@ -142,7 +142,7 @@ def parse_shape(art):
 
 
 class Board:
-    """Un tablero jugable: la silueta objetivo y sus dimensiones."""
+    """A playable board: the target silhouette and its dimensions."""
 
     __slots__ = ("name", "cells", "rows", "cols", "pieces", "created_at", "index")
 
@@ -161,9 +161,9 @@ LEVELS = [
     for i, (name, art) in enumerate(RAW_LEVELS)
 ]
 
-# Tablero clasico 6x10: las 12 piezas, sin hueco.
+# Classic 6x10 board: all 12 pieces, no gaps.
 CLASSIC = Board("Clasico 6x10", [(r, c) for r in range(6) for c in range(10)])
 
-# Resultados conocidos para el rectangulo 6x10.
+# Known results for the 6x10 rectangle.
 CLASSIC_SOLUTIONS = 2339
 CLASSIC_VARIANTS = 9356
