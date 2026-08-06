@@ -1,0 +1,32 @@
+#!/bin/sh
+# Module 5 - lanzador. Busca un Python 3 y arranca el juego.
+# No compila ni instala nada: el juego es solo biblioteca estandar.
+
+DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+PY=""
+for CAND in python3 python3.13 python3.12 python3.11 python3.10 python3.9 python; do
+    if command -v "$CAND" >/dev/null 2>&1 && \
+       "$CAND" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' 2>/dev/null; then
+        PY="$CAND"
+        break
+    fi
+done
+
+if [ -z "$PY" ]; then
+    cat >&2 <<'EOF'
+Module 5 necesita Python 3.8 o mas nuevo, y no encontro ninguno.
+
+  macOS  : ya viene con python3 (si falta: xcode-select --install)
+  Debian : sudo apt install python3
+  Fedora : sudo dnf install python3
+  Arch   : sudo pacman -S python
+EOF
+    exit 1
+fi
+
+# el .pyz (un solo archivo, generado con build.sh) tiene prioridad si existe
+if [ -f "$DIR/m5.pyz" ]; then
+    exec "$PY" "$DIR/m5.pyz" "$@"
+fi
+exec env PYTHONPATH="$DIR${PYTHONPATH:+:$PYTHONPATH}" "$PY" -m m5 "$@"
