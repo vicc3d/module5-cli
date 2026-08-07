@@ -9,7 +9,7 @@ No X11, no graphical environment, nothing to compile or install: it's Python
 3 with pure standard library. Works on Linux and macOS over SSH, in tmux, or
 on a bare console.
 
-![Module 5 terminal demo: menu, placing pieces with rotate/flip, and board zoom](demo.gif)
+![Module 5 terminal demo: menu, placing pieces, and switching between all four themes live](demo.gif)
 
 ## Play
 
