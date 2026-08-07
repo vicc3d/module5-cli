@@ -23,8 +23,7 @@ from .ui import (
     box,
     draw_board,
     draw_cell,
-    draw_piece_shape,
-    draw_silhouette,
+    draw_minimap,
     draw_tray,
     hint,
     resolve_scale,
@@ -265,9 +264,12 @@ class MenuScreen(Screen):
              "desc": t("custom_empty") if not st.custom else
                      "%d %s" % (len(st.custom), t("my_challenges").lower()),
              "note": "%d" % len(st.custom)},
-            {"key": "settings", "label": "04  " + t("settings_title_menu"),
+            {"key": "slots", "label": "04  " + t("saved_games_title_menu"),
+             "desc": t("saved_games_desc_menu"),
+             "note": "%d/5" % len([k for k in st.slots if st.slots[k]])},
+            {"key": "settings", "label": "05  " + t("settings_title_menu"),
              "desc": t("settings_desc")},
-            {"key": "quit", "label": "05  " + t("quit_title"),
+            {"key": "quit", "label": "06  " + t("quit_title"),
              "desc": t("quit_desc")},
         ]
 
@@ -327,11 +329,10 @@ class MenuScreen(Screen):
             self.index = (self.index + 1) % len(items)
         elif name == "enter":
             self.activate(items[self.index]["key"])
-        elif name == "char" and ev.char in "12345":
+        elif name == "char" and ev.char in "123456789"[:len(items)]:
             i = int(ev.char) - 1
-            if i < len(items):
-                self.index = i
-                self.activate(items[i]["key"])
+            self.index = i
+            self.activate(items[i]["key"])
         elif name == "char" and ev.char in "qQ":
             self.app.confirm_quit()
         elif name == "char" and ev.char == "?":
@@ -346,6 +347,8 @@ class MenuScreen(Screen):
             app.push(LevelsScreen(app))
         elif key == "customs":
             app.push(CustomsScreen(app))
+        elif key == "slots":
+            app.push(SlotsScreen(app))
         elif key == "settings":
             app.push(SettingsScreen(app))
         elif key == "quit":
@@ -616,22 +619,18 @@ class GameScreen(ZoomMixin, Screen):
             (g("enter"), t("keys_place")),
             ("bksp", t("keys_take")),
             ("+/_", t("keys_zoom")),
+            ("o", t("keys_settings")),
             ("esc", t("keys_menu")),
         ])
-
-    # Height reserved for the thumbnail of the piece in hand: the vertical I
-    # takes up 5 rows. Always reserved so the box doesn't change size every
-    # time a piece is picked up or put down.
-    SHAPE_H = 5
 
     def panel_body(self):
         """The panel's sections, already resolved, so they can be measured
         before drawing the box."""
         gm = self.game
-        sil_h = 0
-        if gm.mode != "classic":
-            # each silhouette line is 2 board rows (half blocks)
-            sil_h = (gm.board.rows + 1) // 2 + 1
+        # the minimap is shown at full resolution now (one line per board
+        # row), so its height is just the board's own row count -- no more
+        # compression math
+        sil_h = gm.board.rows
         info = []
         if gm.mode == "classic":
             info = [t("info_classic1"), t("info_classic2"),
@@ -651,10 +650,13 @@ class GameScreen(ZoomMixin, Screen):
         info_lines = []
         for line in info:
             info_lines.extend(wrap(line, w - 4))
-        needed = 2 + 1 + 1 + (sil_h + 1 if sil_h else 0) + 1 + self.SHAPE_H + 1 \
-            + 1 + 1 + len(info_lines)
+        # top+bottom border, the minimap, a blank line, the placed-count
+        # line, a blank line, then the info lines
+        needed = 2 + sil_h + 1 + 1 + 1 + len(info_lines)
         h = max(6, min(needed, scr.h - y - 4))
-        box(scr, x, y, w, h, theme, title=t("time_label"))
+        # the elapsed time already shows in the header; this box's title
+        # doubles as the minimap's label instead of repeating the clock
+        box(scr, x, y, w, h, theme, title=t("target"))
         bottom = y + h - 1
 
         def line(yy, text, fg, attr=0):
@@ -662,24 +664,9 @@ class GameScreen(ZoomMixin, Screen):
                 scr.put(x + 2, yy, text[:w - 4], fg, theme.panel, attr)
 
         yy = y + 1
-        line(yy, fmt_time(gm.elapsed()), theme.accent, BOLD)
-        yy += 2
-        # target silhouette (in classic mode the target is the full
-        # rectangle: showing it adds nothing, same as the web version)
-        if sil_h:
-            line(yy, t("target"), theme.text_dim, BOLD)
-            yy += 1
-            if yy + sil_h - 1 < bottom:
-                draw_silhouette(scr, x + 2, yy, gm.board, theme,
-                                occupied=gm.occupied.keys())
-            yy += sil_h
-        if gm.sel:
-            name = gm.sel["name"]
-            line(yy, "%s  %s" % (t("piece_label"), name), theme.piece(name), BOLD)
-            if yy + 1 < bottom:
-                draw_piece_shape(scr, x + 2, yy + 1, gm.sel["orient"],
-                                 theme.piece(name), theme)
-        yy += 1 + self.SHAPE_H + 1
+        if yy + sil_h - 1 < bottom:
+            draw_minimap(scr, x + 2, yy, gm.board, theme, gm.occupied)
+        yy += sil_h + 1
         line(yy, t("placed_count", len(gm.placed), gm.board.pieces), theme.text)
         yy += 2
         for chunk in info_lines:
@@ -744,6 +731,8 @@ class GameScreen(ZoomMixin, Screen):
             self.app.push(HelpScreen(self.app))
         elif low == "q":
             self.app.confirm_leave()
+        elif low == "o":
+            self.app.push(SettingsScreen(self.app))
         elif low == "x":
             if gm.occupied:
                 self.app.push(Modal(
@@ -1111,8 +1100,6 @@ class SettingsScreen(Screen):
              "note": theme_key.upper(), "desc": t(self.app.theme.desc_key)},
             {"key": "mouse", "label": "Mouse",
              "note": t("yes") if st.settings.get("mouse", True) else t("no")},
-            {"key": "slots", "label": t("saved_games"),
-             "note": "%d/5" % len([k for k in st.slots if st.slots[k]])},
             # the count goes as a description, not as a value: in the value
             # column it would read as this row's setting, when it's actually
             # saying what would be lost by clearing it
@@ -1174,8 +1161,6 @@ class SettingsScreen(Screen):
             st.settings["mouse"] = not st.settings.get("mouse", True)
             st.persist()
             app.notify(t("yes") if st.settings["mouse"] else t("no"))
-        elif key == "slots":
-            app.push(SlotsScreen(app))
         elif key == "clear":
             def do_clear():
                 st.clear_progress()
@@ -1381,6 +1366,7 @@ class HelpScreen(Screen):
         ("keys_take", "backspace"),
         ("keys_reset", "x"),
         ("keys_zoom", "+ / _  (shift-= / shift--)"),
+        ("keys_settings", "o"),
         ("keys_menu", "esc"),
         ("keys_help", "?"),
     ]

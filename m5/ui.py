@@ -4,7 +4,7 @@ terminal directly.
 """
 
 from .glyphs import g
-from .pieces import PIECE_KEYS, PIECE_NAMES, bounds_of
+from .pieces import PIECE_KEYS, PIECE_NAMES
 from .term import BOLD, DIM, REVERSE, UNDERLINE
 
 # A terminal character is roughly twice as tall as it is wide, so a square
@@ -233,47 +233,32 @@ def draw_tray(scr, x, y, w, game, theme):
     return cx
 
 
-def draw_piece_shape(scr, x, y, cells, color, theme, fill_bg=True):
-    """Thumbnail of a piece (2 columns per cell), for the side panel."""
-    rows, cols = bounds_of(cells)
-    cellset = set(cells)
-    for r in range(rows):
-        for c in range(cols):
-            cx = x + c * CELL_W
-            if (r, c) in cellset:
-                if theme.tiles and fill_bg:
-                    scr.put(cx, y + r, "  ", theme.tile_text, color)
-                else:
-                    scr.put(cx, y + r, g("full") * CELL_W, color, theme.panel)
-    return rows
-
-
-def draw_silhouette(scr, x, y, board, theme, occupied=None):
-    """Compressed target silhouette: each text line is two board rows (half
-    blocks), so a 6x10 fits in 10x3 characters."""
-    cells = {tuple(c) for c in board.cells}
-    done = set(occupied or ())
-    lines = (board.rows + 1) // 2
-    for i in range(lines):
-        r_top, r_bot = i * 2, i * 2 + 1
+def draw_minimap(scr, x, y, board, theme, occupied):
+    """A small, non-interactive copy of the board: same 2-char cells, same
+    piece colors and letters as the real one, filling in live as pieces
+    land -- the terminal's answer to the web version's #preview canvas.
+    """
+    target = {tuple(c) for c in board.cells}
+    for r in range(board.rows):
         for c in range(board.cols):
-            top = (r_top, c) in cells
-            bot = (r_bot, c) in cells and r_bot < board.rows
-            if top and bot:
-                ch = g("full")
-            elif top:
-                ch = g("upper")
-            elif bot:
-                ch = g("lower")
-            else:
-                ch = " "
-            if ch == " ":
+            cell = (r, c)
+            if cell not in target:
                 continue
-            # if `occupied` is passed, what's already solved paints at full brightness
-            filled = ((r_top, c) in done) or ((r_bot, c) in done)
-            color = theme.accent if filled else theme.text_dim
-            scr.put(x + c, y + i, ch, color, theme.panel)
-    return lines
+            cx = x + c * CELL_W
+            cy = y + r
+            owner = occupied.get(cell)
+            if owner:
+                if theme.tiles:
+                    draw_cell(scr, cx, cy, CELL_W, 1, owner, theme.tile_text,
+                              theme.piece(owner), BOLD)
+                else:
+                    draw_cell(scr, cx, cy, CELL_W, 1, owner, theme.piece(owner),
+                              theme.panel, BOLD, body=g("full"),
+                              body_fg=theme.dim_piece(owner, 0.35))
+            else:
+                draw_cell(scr, cx, cy, CELL_W, 1, g("empty_cell"), theme.empty,
+                          theme.panel)
+    return board.rows
 
 
 def hint(scr, x, y, w, pairs, theme):

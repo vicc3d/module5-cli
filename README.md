@@ -63,6 +63,7 @@ it, but it's never required.
 | Take back a placed piece | `Backspace` over it, or its same key |
 | Reset the board | `X` |
 | Board zoom | `+` / `_` (Shift-`=` / Shift-`-`) or the mouse wheel |
+| Settings, mid-game | `O` |
 | Help | `?` |
 | Back / cancel | `Esc` |
 | Quit | `Ctrl-C`, or `q` from the menu |
@@ -116,7 +117,12 @@ as you resize.
 ## Settings
 
 Under `SETTINGS`: language (Spanish / English, detected from `LANG`), theme,
-mouse, 5 save-game slots, and progress reset.
+mouse, and progress reset. Reachable from the main menu, or with `O` at any
+point during a game — the game underneath stays exactly as you left it
+(selected piece included) when you back out with `Esc`.
+
+`SAVED GAMES` (5 slots) lives as its own item in the main menu, not nested
+under Settings — it's about managing games in progress, not preferences.
 
 ### Themes
 

@@ -171,7 +171,7 @@ def main():
     os.write(master, b"r")                   # rotar
     drain(master, 0.5)
     ghost = screen_now(rows, cols)
-    check("muestra la pieza en la mano", "PIEZA  F" in ghost, ghost[:900])
+    check("el panel lateral muestra el objetivo", "OBJETIVO" in ghost, ghost[:900])
     os.write(master, b"\r")                  # colocar
     drain(master, 0.6)
     full = screen_now(rows, cols)
