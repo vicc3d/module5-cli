@@ -27,22 +27,27 @@ python3 -m m5
 
 ### Single file
 
-To carry it to another machine, copying **one** file is enough. It's built
-with `zipapp`, also from the standard library:
+To carry it to another machine, copying **one** file is enough: `m5.pyz`,
+self-contained, no `pip install`, nothing to compile.
+
+Grab it from [the latest release](https://github.com/vicc3d/module5-cli/releases/latest),
+or build it yourself with `zipapp` (also standard library):
 
 ```bash
 ./build.sh
 ```
 
-That produces `m5.pyz` (~42 KB), executable and self-contained:
+Then run it:
 
 ```bash
-./m5.pyz
+python3 m5.pyz
 ```
 
-Copy it to any Linux or macOS with Python 3 and it runs as-is — no
-`pip install`, nothing to compile. If `m5.pyz` sits next to the launcher,
-`./module5` uses it automatically.
+`python3 m5.pyz` always works, regardless of file permissions. If the file
+kept its executable bit (true for a local build; not guaranteed for a
+browser download), `./m5.pyz` works too. Copy it to any Linux or macOS with
+Python 3 and it runs as-is. If `m5.pyz` sits next to the launcher, `./module5`
+uses it automatically.
 
 ## Controls
 
