@@ -1,4 +1,4 @@
-# Module 5 — terminal
+# Module 5 - terminal
 
 Native terminal port of the Module 5 pentomino game (there's also a web
 version in Three.js). Same pentominoes, same 20 levels, the same count of
