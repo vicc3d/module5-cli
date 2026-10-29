@@ -1173,7 +1173,8 @@ class SettingsScreen(Screen):
                 "",
                 t("about_tagline"),
                 "",
-                "3dvic.com · MIT License",
+                "Victor Crespo · 3dvic.com",
+                "MIT License",
             ], [(t("close"), None)]))
 
 

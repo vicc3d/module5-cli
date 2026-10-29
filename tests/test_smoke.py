@@ -534,6 +534,7 @@ def test_about():
         check("%s: opens a modal" % lang, h.top == "Modal")
         check("%s: shows the version" % lang, h.has(__version__), h.text())
         check("%s: mentions the license" % lang, h.has("MIT License"), h.text())
+        check("%s: credits the author" % lang, h.has("Victor Crespo"), h.text())
         h.key("enter")  # Close
         check("%s: returns to Settings" % lang, h.top == "SettingsScreen")
 
