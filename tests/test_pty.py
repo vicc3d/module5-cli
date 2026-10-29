@@ -1,8 +1,8 @@
 """Integration test on a real terminal (pty).
 
 The headless harness verifies the drawing; this verifies the plumbing: raw
-mode, the alternate screen, the mouse, redrawing on resize, and -- above all
--- that the terminal is left as it was on exit.
+mode, the alternate screen, the mouse, redrawing on resize, and, above all,
+that the terminal is left as it was on exit.
 
     python3 tests/test_pty.py
 """
@@ -25,7 +25,7 @@ FAILED = []
 
 def check(label, cond, extra=""):
     print("  [%s] %s%s" % ("ok  " if cond else "FAIL", label,
-                           ("  -- " + extra) if extra and not cond else ""))
+                           (": " + extra) if extra and not cond else ""))
     if not cond:
         FAILED.append(label)
 
@@ -89,7 +89,7 @@ def render(text, rows=30, cols=100):
     """Interprets just enough ANSI to reconstruct what's on screen.
 
     Supports what the game emits: positioning the cursor, writing, clearing
-    the screen, and SGR (which is discarded -- only the characters matter here).
+    the screen, and SGR (which is discarded, since only the characters matter here).
     """
     grid = [[" "] * cols for _ in range(rows)]
     x = y = 0
@@ -143,84 +143,84 @@ def main():
     )
     os.close(slave)
 
-    print("== arranque en una pty real")
+    print("== startup on a real pty")
     boot = drain(master, 1.2)
-    check("entra en la pantalla alternativa", "\x1b[?1049h" in boot)
-    check("esconde el cursor", "\x1b[?25l" in boot)
-    check("activa el pegado con corchetes", "\x1b[?2004h" in boot)
-    check("activa el mouse (SGR 1006)", "\x1b[?1006h" in boot)
-    check("usa color de 24 bits", "38;2;" in boot, boot[:200])
+    check("enters the alternate screen", "\x1b[?1049h" in boot)
+    check("hides the cursor", "\x1b[?25l" in boot)
+    check("enables bracketed paste", "\x1b[?2004h" in boot)
+    check("enables the mouse (SGR 1006)", "\x1b[?1006h" in boot)
+    check("uses 24-bit color", "38;2;" in boot, boot[:200])
     drain(master, 0.5)   # the first frame can arrive split across two reads
     screen = screen_now(rows, cols)
     # in the menu "MODULE 5" is a block typeface, not text: what's checked
     # is the menu entries and the title drawn with blocks
-    check("dibuja el menu",
+    check("draws the menu",
           all(w in screen for w in ("CLASICO", "FORMAS", "SALIR", "PENTOMINOS")),
           screen[:500])
-    check("dibuja el titulo en bloques", screen.count("█") > 40,
+    check("draws the title in blocks", screen.count("█") > 40,
           str(screen.count("█")))
 
-    print("\n== jugar")
-    os.write(master, b"\r")                  # entra a Clasico
+    print("\n== playing")
+    os.write(master, b"\r")                  # enters Classic
     drain(master, 0.6)
     board = screen_now(rows, cols)
-    check("el HUD muestra el tablero", "BANDEJA" in board, board[:600])
-    check("el titulo pasa a Clasico", "CLASICO // 6x10" in board, board[:200])
-    os.write(master, b"1")                   # toma la pieza F
-    os.write(master, b"\x1b[C\x1b[C")        # dos veces a la derecha
-    os.write(master, b"r")                   # rotar
+    check("the HUD shows the board", "BANDEJA" in board, board[:600])
+    check("the title switches to Classic", "CLASICO // 6x10" in board, board[:200])
+    os.write(master, b"1")                   # picks piece F
+    os.write(master, b"\x1b[C\x1b[C")        # right twice
+    os.write(master, b"r")                   # rotate
     drain(master, 0.5)
     ghost = screen_now(rows, cols)
-    check("el panel lateral muestra el objetivo", "OBJETIVO" in ghost, ghost[:900])
-    os.write(master, b"\r")                  # colocar
+    check("the side panel shows the target", "OBJETIVO" in ghost, ghost[:900])
+    os.write(master, b"\r")                  # place
     drain(master, 0.6)
     full = screen_now(rows, cols)
-    check("cuenta la pieza colocada", "1/12" in full, full)
+    check("counts the placed piece", "1/12" in full, full)
 
-    print("\n== cambio de tamano")
+    print("\n== resize")
     set_size(master, 24, 70)
     proc.send_signal(signal.SIGWINCH)
     resized = drain(master, 0.8)
-    check("repinta al recibir SIGWINCH", len(resized) > 100, str(len(resized)))
+    check("repaints on SIGWINCH", len(resized) > 100, str(len(resized)))
     small = render(resized, 24, 70)
-    check("el juego sigue dibujado tras el resize",
+    check("the game is still drawn after the resize",
           "BANDEJA" in small or "MODULE 5" in small, small[:400])
 
-    print("\n== terminal muy chica")
+    print("\n== terminal too small")
     set_size(master, 8, 30)
     proc.send_signal(signal.SIGWINCH)
     tiny = render(drain(master, 0.8), 8, 30)
-    check("avisa que la terminal es muy chica", "chica" in tiny or "small" in tiny,
+    check("warns that the terminal is too small", "chica" in tiny or "small" in tiny,
           tiny)
 
-    print("\n== salida limpia")
+    print("\n== clean exit")
     set_size(master, 30, 100)
     proc.send_signal(signal.SIGWINCH)
     drain(master, 0.4)
     os.write(master, b"\x03")                # ctrl-c
     code = wait_exit(master, proc)
     tail = "".join(TRANSCRIPT[-6:])
-    check("el proceso termina", code == 0, "codigo=%s" % code)
-    check("desactiva el mouse", "\x1b[?1006l" in tail or "\x1b[?1000l" in tail, tail[-200:])
-    check("desactiva el pegado con corchetes", "\x1b[?2004l" in tail, tail[-200:])
-    check("vuelve a mostrar el cursor", "\x1b[?25h" in tail, tail[-200:])
-    check("sale de la pantalla alternativa", "\x1b[?1049l" in tail, tail[-200:])
-    check("resetea los atributos", "\x1b[0m" in tail, tail[-200:])
+    check("the process exits", code == 0, "code=%s" % code)
+    check("disables the mouse", "\x1b[?1006l" in tail or "\x1b[?1000l" in tail, tail[-200:])
+    check("disables bracketed paste", "\x1b[?2004l" in tail, tail[-200:])
+    check("shows the cursor again", "\x1b[?25h" in tail, tail[-200:])
+    check("leaves the alternate screen", "\x1b[?1049l" in tail, tail[-200:])
+    check("resets the attributes", "\x1b[0m" in tail, tail[-200:])
     os.close(master)
 
-    print("\n== no es una terminal (tuberia)")
+    print("\n== not a terminal (pipe)")
     piped = subprocess.run([sys.executable, "-m", "m5"], cwd=ROOT, env=env,
                            stdin=subprocess.DEVNULL, capture_output=True)
-    check("rechaza correr sin terminal", piped.returncode == 2)
-    check("y lo explica", b"terminal" in piped.stderr, piped.stderr[:200].decode())
+    check("refuses to run without a terminal", piped.returncode == 2)
+    check("and explains why", b"terminal" in piped.stderr, piped.stderr[:200].decode())
 
-    print("\n" + "=" * 60)
+    print()
     if FAILED:
-        print("FALLARON %d comprobaciones:" % len(FAILED))
+        print("%d checks FAILED:" % len(FAILED))
         for f in FAILED:
             print("  - " + f)
         return 1
-    print("todo en verde")
+    print("all green")
     return 0
 
 

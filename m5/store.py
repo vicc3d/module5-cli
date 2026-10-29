@@ -68,7 +68,9 @@ class Store:
                 # future version shouldn't crash startup
                 if default is None or isinstance(disk[key], type(default)):
                     self.data[key] = disk[key]
-            self.data["settings"] = {**DEFAULT_SETTINGS, **(disk.get("settings") or {})}
+            saved = disk.get("settings")
+            if isinstance(saved, dict):
+                self.data["settings"] = {**DEFAULT_SETTINGS, **saved}
         if not self.data["settings"].get("lang"):
             self.data["settings"]["lang"] = detect_lang()
 
@@ -85,7 +87,7 @@ class Store:
         except OSError:
             pass  # without writable disk the game is still playable
 
-    # --- convenience accessors ----------------------------------------------
+    # Convenience accessors
 
     @property
     def settings(self):
@@ -118,7 +120,7 @@ class Store:
         self.persist()
 
 
-# --- exchange codes (compatible with the web version) -----------------------
+# Exchange codes (compatible with the web version)
 
 
 def encode_challenge(ch):

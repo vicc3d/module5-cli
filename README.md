@@ -73,13 +73,13 @@ selection, and in the editor you can drag to paint.
 
 ## Modes
 
-**01 — Classic.** Fill the 6×10 board with all 12 pieces. The score is time.
+**01. Classic.** Fill the 6×10 board with all 12 pieces. The score is time.
 Each solution is recorded in canonical form (invariant to 180° rotation and
 board mirrors) and can't repeat: there are **2339 unique solutions** (9356
 counting symmetries) to discover. It's the exact same canonicalization as
 the web version, so the count means the same thing in both.
 
-**02 — Shapes.** 20 levels of increasing difficulty (1 to 12 pieces). The
+**02. Shapes.** 20 levels of increasing difficulty (1 to 12 pieces). The
 target silhouette shows in the side panel, compressed with half-blocks. Each
 level unlocks the next.
 
@@ -100,8 +100,8 @@ re-verified on import. No hints during play, just like the physical puzzle.
 The board **scales to the available space**: it picks the largest cell that
 fits the terminal (from 2×1 up to 8×4 characters) and rescales only when the
 window is resized, without restarting the game. A 60-cell board stays at
-medium cells — stretching it further spaces the letters out enough that the
-pieces stop reading as a single shape — while the small silhouettes in the
+medium cells, because stretching it further spaces the letters out enough
+that the pieces stop reading as a single shape. The small silhouettes in the
 early levels grow more, so they don't get lost in the middle of the screen.
 
 That automatic choice can be overridden with **`+` and `_`** (on a US
@@ -118,18 +118,18 @@ as you resize.
 
 Under `SETTINGS`: language (Spanish / English, detected from `LANG`), theme,
 mouse, and progress reset. Reachable from the main menu, or with `O` at any
-point during a game — the game underneath stays exactly as you left it
+point during a game. The game underneath stays exactly as you left it
 (selected piece included) when you back out with `Esc`.
 
 `SAVED GAMES` (5 slots) lives as its own item in the main menu, not nested
-under Settings — it's about managing games in progress, not preferences.
+under Settings, because it's about managing games in progress, not preferences.
 
 ### Themes
 
 | Theme | |
 | --- | --- |
 | `neon` | Neon on black (default): each piece is a colored tile |
-| `ascii` | Green phosphor, plain text — the equivalent of the web's ASCII theme |
+| `ascii` | Green phosphor, plain text, the equivalent of the web's ASCII theme |
 | `blueprint` | Technical blueprint in blue |
 | `mono` | No color, for plain terminals |
 
@@ -207,7 +207,7 @@ shows while repainting.
 **The solver runs on the main thread.** With the GIL, a thread wouldn't
 help: the solver hands control back to the renderer every so many nodes via
 a callback, which spins the spinner and allows canceling with `Esc`.
-Verifying the full 6×10 — the worst case — takes ~1.4 s.
+Verifying the full 6×10, which is the worst case, takes about 1.4 s.
 
 **On exit, the terminal is left exactly as it was**, even if the game
 crashes or gets suspended with `Ctrl-Z`: `Terminal` is a context manager and
@@ -215,10 +215,10 @@ hooks `SIGTSTP`/`SIGCONT` to restore and redo raw mode.
 
 ## Credits
 
-**Concept and development** — [Victor Crespo](https://3dvic.com)
+**Concept and development:** [Victor Crespo](https://3dvic.com)
 
 If this was useful, a coffee is always welcome: [ko-fi.com/vicc3d](https://ko-fi.com/vicc3d)
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

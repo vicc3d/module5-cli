@@ -69,7 +69,7 @@ class Harness:
         self.term = FakeTerminal(w, h, color_mode)
         self.app = App(self.term, store)
 
-    # --- input ---------------------------------------------------------------
+    # Input
 
     def key(self, name, char=None):
         self.app.dispatch(Key(name, char))
@@ -104,7 +104,7 @@ class Harness:
         self.app.render_once()
         return self
 
-    # --- reading ---------------------------------------------------------
+    # Reading
 
     def lines(self):
         scr = self.term.screen

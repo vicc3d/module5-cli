@@ -5,7 +5,7 @@ curses is deliberately not used: 24-bit color was needed for the game's neon
 palette, and a custom diff lets it repaint only what changed (the whole board
 is ~250 cells; repainting it fully every tick would flicker over SSH).
 Everything emitted is ANSI sequences that any Linux or macOS terminal
-understands -- no X11, nothing to compile.
+understands. No X11, nothing to compile.
 """
 
 import codecs
@@ -17,7 +17,7 @@ import sys
 import termios
 import tty
 
-# --- style attributes -------------------------------------------------------
+# Style attributes
 
 BOLD = 1
 DIM = 2
@@ -25,7 +25,7 @@ ITALIC = 4
 UNDERLINE = 8
 REVERSE = 16
 
-# --- color detection and conversion -----------------------------------------
+# Color detection and conversion
 
 TRUECOLOR, C256, C16, MONO = "truecolor", "256", "16", "mono"
 
@@ -150,7 +150,7 @@ class Palette:
         return "%d;1" % base if i >= 8 and not is_bg else str(base + (60 if i >= 8 else 0))
 
 
-# --- screen buffer -----------------------------------------------------
+# Screen buffer
 
 _BLANK = (" ", None, None, 0)
 
@@ -288,7 +288,7 @@ def _sgr(pal, fg, bg, attr):
     return "\x1b[" + ";".join(parts) + "m"
 
 
-# --- input events ------------------------------------------------------------
+# Input events
 
 class Key:
     __slots__ = ("name", "char")
@@ -452,7 +452,7 @@ def _parse_mouse(m):
     return Mouse(kind, button, x - 1, y - 1)
 
 
-# --- the terminal itself -----------------------------------------------------
+# The terminal itself
 
 class Terminal:
     """Context manager: enters raw mode + the alternate screen and restores
@@ -469,7 +469,7 @@ class Terminal:
         self.resized = True
         self._entered = False
 
-    # -- lifecycle --
+    # Lifecycle
 
     def __enter__(self):
         self._setup()
@@ -523,7 +523,7 @@ class Terminal:
         os.kill(os.getpid(), signal.SIGTSTP)
         signal.signal(signal.SIGTSTP, self._on_tstp)
 
-    # -- output --
+    # Output
 
     def write(self, text):
         data = text.encode("utf-8", "replace") if isinstance(text, str) else text
@@ -554,12 +554,12 @@ class Terminal:
     def present(self):
         self.write(self.screen.render())
 
-    # -- input --
+    # Input
 
     def poll(self, timeout=0.1):
         return self.input.poll(timeout)
 
-    # -- clipboard --
+    # Clipboard
 
     def copy(self, text):
         """Copies to the clipboard. Returns True if some method worked.

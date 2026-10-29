@@ -129,7 +129,7 @@ class Screen:
         return None
 
 
-# --- shared chrome ------------------------------------------------------------
+# Shared chrome
 
 def header(scr, theme, title, right=None):
     w = scr.w
@@ -244,7 +244,7 @@ def menu_rows(scr, theme, x, y, w, items, index, gap=1, desc_gap=1, max_desc=2):
     return height
 
 
-# --- main menu ------------------------------------------------------------
+# Main menu
 
 class MenuScreen(Screen):
     def __init__(self, app):
@@ -276,7 +276,7 @@ class MenuScreen(Screen):
     # Layout variants (big logo, space between options, space around the
     # description, description lines), from the roomiest to the tightest: the
     # first one that fits above the footer line is used. The space around the
-    # description is the last thing sacrificed -- it's exactly what keeps the
+    # description is the last thing sacrificed, since it's exactly what keeps the
     # text from reading as glued to the value above it.
     LAYOUTS = [
         (True, 1, 1, 2), (False, 1, 1, 2), (False, 0, 1, 2), (False, 0, 1, 1),
@@ -355,7 +355,7 @@ class MenuScreen(Screen):
             app.confirm_quit()
 
 
-# --- level selection --------------------------------------------------------
+# Level selection
 
 class LevelsScreen(Screen):
     def __init__(self, app):
@@ -448,7 +448,7 @@ class LevelsScreen(Screen):
             self.app.push(HelpScreen(self.app))
 
 
-# --- my challenges -----------------------------------------------------------
+# My challenges
 
 class CustomsScreen(Screen):
     def __init__(self, app):
@@ -551,7 +551,7 @@ class CustomsScreen(Screen):
         ))
 
 
-# --- game screen --------------------------------------------------------------
+# Game screen
 
 PANEL_W = 26
 
@@ -628,8 +628,8 @@ class GameScreen(ZoomMixin, Screen):
         before drawing the box."""
         gm = self.game
         # the minimap is shown at full resolution now (one line per board
-        # row), so its height is just the board's own row count -- no more
-        # compression math
+        # row), so its height is just the board's own row count and there's
+        # no compression math left
         sil_h = gm.board.rows
         info = []
         if gm.mode == "classic":
@@ -684,7 +684,7 @@ class GameScreen(ZoomMixin, Screen):
                 return ch
         return None
 
-    # -- interaction --
+    # Interaction
 
     def handle(self, ev):
         gm = self.game
@@ -794,7 +794,7 @@ class GameScreen(ZoomMixin, Screen):
         return None
 
 
-# --- challenge editor ---------------------------------------------------------
+# Challenge editor
 
 ED_ROWS, ED_COLS = 6, 10
 # fictitious board the size of the grid, just to pick the scale
@@ -1012,7 +1012,7 @@ class EditorScreen(ZoomMixin, Screen):
                                    max_len=24))
 
 
-# --- import a code -----------------------------------------------------------
+# Import a code
 
 class ImportScreen(Screen):
     overlay = True
@@ -1083,7 +1083,7 @@ class ImportScreen(Screen):
         self.app.notify(t("imported", ch["name"]))
 
 
-# --- settings ------------------------------------------------------------
+# Settings
 
 class SettingsScreen(Screen):
     def __init__(self, app):
@@ -1236,7 +1236,7 @@ class SlotsScreen(Screen):
             self.app.load_slot(self.index)
 
 
-# --- modals and help --------------------------------------------------------
+# Modals and help
 
 class Modal(Screen):
     overlay = True

@@ -236,7 +236,7 @@ def draw_tray(scr, x, y, w, game, theme):
 def draw_minimap(scr, x, y, board, theme, occupied):
     """A small, non-interactive copy of the board: same 2-char cells, same
     piece colors and letters as the real one, filling in live as pieces
-    land -- the terminal's answer to the web version's #preview canvas.
+    land. It's the terminal's answer to the web version's #preview canvas.
     """
     target = {tuple(c) for c in board.cells}
     for r in range(board.rows):

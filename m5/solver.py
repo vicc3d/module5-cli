@@ -2,8 +2,8 @@
 Verifies that user-created challenges have a solution.
 
 The web version ran this in a Web Worker; here there's no thread worth using
-(the GIL would leave the UI frozen anyway), so it's a bitmask solver --
-considerably faster than a literal port of the JS one -- with an `on_tick`
+(the GIL would leave the UI frozen anyway), so it's a bitmask solver,
+considerably faster than a literal port of the JS one, with an `on_tick`
 callback that hands control back to the render loop every so often, to draw
 the spinner and allow canceling.
 """

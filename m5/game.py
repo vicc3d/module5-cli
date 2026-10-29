@@ -45,7 +45,7 @@ class Game:
         self.end_time = None
         self.current_slot = None
 
-    # --- startup -------------------------------------------------------------
+    # Startup
 
     def start(self, mode, board, level_index=0):
         self.mode = mode
@@ -85,7 +85,7 @@ class Game:
         self.start_time = None
         self.end_time = None
 
-    # --- clock -----------------------------------------------------------
+    # Clock
 
     def elapsed(self):
         """Seconds played (0 until the first piece is placed)."""
@@ -96,7 +96,7 @@ class Game:
     def elapsed_ms(self):
         return int(self.elapsed() * 1000)
 
-    # --- selection and ghost piece ------------------------------------------
+    # Selection and ghost piece
 
     def select(self, name):
         if name in self.placed or name not in PIECE_DEFS:
@@ -155,7 +155,7 @@ class Game:
             return True
         return False
 
-    # --- placing and taking back ---------------------------------------------
+    # Placing and taking back
 
     def place(self):
         """Places the selected piece. Returns True if it fit."""
@@ -196,7 +196,7 @@ class Game:
     def is_complete(self):
         return len(self.occupied) == len(self.target) and bool(self.target)
 
-    # --- canonical solution (classic only) -----------------------------------
+    # Canonical solution (classic only)
 
     def canonical_solution(self):
         """Canonical form invariant to 180-degree rotation and board mirrors.
@@ -214,7 +214,7 @@ class Game:
         ]
         return min(variants)
 
-    # --- saved games -----------------------------------------------------
+    # Saved games
 
     def snapshot(self):
         if self.mode is None:
@@ -281,7 +281,7 @@ class Game:
 
 
 def fmt_time(seconds):
-    """mm:ss.d — the same format as fmtTime() in the web version."""
+    """Formats as mm:ss.d, the same format as fmtTime() in the web version."""
     if seconds is None:
         return "--:--.-"
     m = int(seconds // 60)

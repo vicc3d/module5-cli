@@ -38,7 +38,7 @@ class App:
         zoom = self.store.settings.get("zoom")
         self.zoom = int(zoom) if isinstance(zoom, (int, float)) else None
 
-    # --- theme ----------------------------------------------------------------
+    # Theme
 
     def apply_theme(self):
         self.theme = get_theme(self.store.settings.get("theme", "neon"),
@@ -51,7 +51,7 @@ class App:
         home = os.path.expanduser("~")
         return path.replace(home, "~") if path.startswith(home) else path
 
-    # --- screen stack -----------------------------------------------------
+    # Screen stack
 
     def push(self, screen):
         self.stack.append(screen)
@@ -71,7 +71,7 @@ class App:
     def top(self):
         return self.stack[-1]
 
-    # --- board zoom -------------------------------------------------------
+    # Board zoom
 
     def set_zoom(self, value):
         """Sets the manual zoom (or None to go back to automatic scale)."""
@@ -80,7 +80,7 @@ class App:
         self.store.persist()
         self.term.screen.force_redraw()
 
-    # --- ephemeral notices ------------------------------------------------
+    # Ephemeral notices
 
     def notify(self, text, kind="ok", seconds=2.5):
         self.toast = (text, time.monotonic() + seconds, kind)
@@ -99,7 +99,7 @@ class App:
         y = max(0, scr.h - 2)
         scr.put(x, y, label, color, theme.panel, BOLD)
 
-    # --- render ---------------------------------------------------------------
+    # Render
 
     def render_once(self):
         term = self.term
@@ -118,7 +118,7 @@ class App:
             self._draw_toast(scr)
         term.present()
 
-    # --- main loop --------------------------------------------------------
+    # Main loop
 
     def run(self):
         term = self.term
@@ -147,7 +147,7 @@ class App:
             return
         self.top.handle(ev)
 
-    # --- quit -----------------------------------------------------------------
+    # Quit
 
     def confirm_quit(self):
         def do_quit():
@@ -169,7 +169,7 @@ class App:
             klass="warn",
         ))
 
-    # --- saved games --------------------------------------------------------
+    # Saved games
 
     def save_and_exit(self):
         slot = self.game.current_slot
@@ -203,7 +203,7 @@ class App:
         self.game.current_slot = i
         self.stack = [MenuScreen(self), GameScreen(self)]
 
-    # --- completion -------------------------------------------------------
+    # Completion
 
     def on_complete(self):
         gm = self.game

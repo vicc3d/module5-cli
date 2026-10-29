@@ -4,3 +4,4 @@ build/
 m5.pyz
 .test-pty-save/
 .DS_Store
+.claude/
